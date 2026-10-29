@@ -1,9 +1,4 @@
-@@ 2026-10-29 | Hola, mundo
-Primera entrada del blog. Todo está hecho en texto plano, como debe ser.
+@@ 2026-10-29 | Hola, mundo.
 
-Para escribir otra, copia un bloque como este arriba del todo y cambia la fecha, el título y el texto.
 
-@@ 2026-10-28 | Por qué ASCII
-Negro, rojo y blanco. Sin imágenes, sin ruido, solo caracteres.
 
-Lo simple se carga rápido y envejece bien.
