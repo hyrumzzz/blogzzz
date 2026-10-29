@@ -59,7 +59,9 @@
   .bk1 { animation:k1 5s steps(1,end) infinite; }
   .bk2 { animation:k2 3.3s ease-in-out infinite; }
   .bk3 { animation:k3 8s steps(1,end) infinite; }
-  @media (prefers-reduced-motion:reduce) { .bk1,.bk2,.bk3 { animation:none; } }
+
+  a.nuevo, a.nuevo:hover, a.nuevo:focus { display:inline-block; margin:6px 0 2px; padding:4px 10px; border:2px solid #fff; font-weight:bold; background:var(--red); color:#fff; }
+  a.nuevo.b, a.nuevo.b:hover, a.nuevo.b:focus { background:#fff; color:var(--red); border-color:var(--red); }
 </style>
 </head>
 <body>
@@ -144,7 +146,7 @@ function hace(iso) {
 }
 const etiqueta = x => x.iso ? hace(x.iso) : x.fecha;
 
-const LISTA_KEY = "pl:v1", LISTA_TTL = 10 * 60 * 1000;
+const LISTA_KEY = "pl:v1", LISTA_TTL = 24 * 60 * 60 * 1000;
 function listaGuardada() { try { return JSON.parse(localStorage.getItem(LISTA_KEY)); } catch (e) { return null; } }
 
 async function cargarPosts() {
@@ -203,7 +205,19 @@ async function render() {
   }
   else if (ENTRADAS === "cargando") app.innerHTML = "<p class='dim'>cargando...</p>";
   else if (ENTRADAS === "error") app.innerHTML = "<div class='box'>No se pudieron cargar las entradas.</div>";
-  else app.innerHTML = "<h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(x.fecha)}]</span> <span class="t">${esc(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
+  else app.innerHTML = "<div id='nuevo'></div><h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(x.fecha)}]</span> <span class="t">${esc(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
+  mostrarNuevo(h);
+}
+
+async function mostrarNuevo(h) {
+  if (h === "acerca" || enPosts(h)) return;
+  try {
+    const list = await cargarPosts();
+    const el = document.getElementById("nuevo");
+    if (!el || actual() !== h || !list.length) return;
+    const p = list[0];
+    el.innerHTML = `<a class="nuevo" href="#${p.id}">&gt;&gt;&gt; Nuev0: ${esc(p.titulo)} &lt;&lt;&lt;</a>`;
+  } catch (e) {}
 }
 
 fetch("entradas.txt", { cache: "no-store" })
@@ -213,6 +227,7 @@ fetch("entradas.txt", { cache: "no-store" })
   .finally(() => { const h = actual(); if (h !== "acerca" && !enPosts(h)) render(); });
 render();
 addEventListener("hashchange", render);
+setInterval(() => document.querySelectorAll(".nuevo").forEach(e => e.classList.toggle("b")), 400);
 </script>
 </body>
 </html>
