@@ -1,14 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>[ MI_BLOG ]</title>
+<meta name="color-scheme" content="dark">
+<title>[ BLOG ]</title>
 <style>
-  :root { --bg:#000; --fg:#f2f2f2; --red:#ff1a1a; --dim:#8a8a8a; }
+  :root { --bg:#000; --fg:#f2f2f2; --red:#ff1a1a; --dim:#8a8a8a; color-scheme:dark; }
   * { box-sizing: border-box; }
-  html, body { margin:0; background:var(--bg); color:var(--fg); }
-  body { font-family:"Courier New", Consolas, monospace; font-size:16px; line-height:1.55; padding:24px 16px 60px; }
+  html { background:var(--bg); min-height:100%; }
+  body { margin:0; min-height:100vh; background:var(--bg); color:var(--fg); font-family:"Courier New", Consolas, monospace; font-size:16px; line-height:1.55; padding:24px 16px 60px; }
   .wrap { max-width:820px; margin:0 auto; }
   pre { margin:0; font-family:inherit; overflow-x:auto; }
   .banner { color:var(--red); font-size:clamp(7px, 2vw, 14px); line-height:1.1; }
@@ -31,17 +33,17 @@
 </head>
 <body>
 <div class="wrap">
-<pre class="banner" aria-label="MI BLOG">
- __  __ ___   ____  _     ___   ____
-|  \/  |_ _| | __ )| |   / _ \ / ___|
-| |\/| || |  |  _ \| |  | | | | |  _
-| |  | || |  | |_) | |__| |_| | |_| |
-|_|  |_|___| |____/|_____\___/ \____|
+<pre class="banner" aria-label="BLOG">
+ ____  _     ___   ____
+| __ )| |   / _ \ / ___|
+|  _ \| |  | | | | |  _
+| |_) | |__| |_| | |_| |
+|____/|_____\___/ \____|
 </pre>
 <div class="rule">====================================================================================================</div>
 <nav><a href="#inicio">[ inicio ]</a><a href="#acerca">[ acerca ]</a></nav>
 <div class="rule">====================================================================================================</div>
-<main id="app">cargando...</main>
+<main id="app"></main>
 <footer class="dim">
   <div class="rule">----------------------------------------------------------------------------------------------------</div>
   <div>&gt; sesión activa<span class="cursor"></span></div>
@@ -49,9 +51,7 @@
 </div>
 
 <script>
-// Texto de la página "acerca": cámbialo por el tuyo.
-const ACERCA = ["Este blog corre en GitHub Pages, gratis y sin base de datos.",
-                "Cambia este texto por tu presentación."];
+const ACERCA = ["Un blog en texto plano."];
 
 const app = document.getElementById("app");
 const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -82,7 +82,7 @@ function render() {
 fetch("entradas.txt", { cache: "no-store" })
   .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
   .then(t => { POSTS = parse(t).sort((a, b) => b.fecha.localeCompare(a.fecha)); render(); })
-  .catch(() => { app.innerHTML = "<div class='box'>No se pudo cargar <b>entradas.txt</b>. Asegúrate de que esté subido junto a index.html. (Abriendo el archivo directo en tu PC no funciona; en GitHub Pages sí.)</div>"; });
+  .catch(() => { app.innerHTML = "<div class='box'>No se pudieron cargar las entradas.</div>"; });
 addEventListener("hashchange", render);
 </script>
 </body>
