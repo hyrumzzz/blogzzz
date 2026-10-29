@@ -71,7 +71,7 @@
 |____/|_____\___/ \____|
 </pre>
 <div class="rule">====================================================================================================</div>
-<nav><a href="#inicio">[ inicio ]</a><a href="#acerca">[ acerca ]</a></nav>
+<nav><a href="#inicio">[ inicio ]</a><a href="#posts">[ posts ]</a><a href="#acerca">[ acerca ]</a></nav>
 <div class="rule">====================================================================================================</div>
 <main id="app"></main>
 <footer class="dim">
@@ -100,11 +100,79 @@ function parse(raw) {
 }
 const parrafos = arr => arr.map(t => `<p>${esc(t).replace(/\n/g, "<br>")}</p>`).join("");
 
-function render() {
-  const h = location.hash.slice(1) || "inicio";
-  if (h === "acerca") app.innerHTML = `<h2>&gt; ACERCA</h2><div class="box body">${parrafos(ACERCA)}</div>`;
-  else app.innerHTML = "<h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(x.fecha)}]</span> <span class="t">${esc(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
+const REPO = "hyrumzzz/blogzzz", CARPETA = "posts";
+let POSTLIST = null;
+
+async function fechaCreacion(name) {
+  const k = "pd:" + name;
+  try { const c = localStorage.getItem(k); if (c) return c; } catch (e) {}
+  let r = await fetch(`https://api.github.com/repos/${REPO}/commits?path=${encodeURIComponent(CARPETA + "/" + name)}&per_page=1`);
+  if (!r.ok) throw new Error(r.status);
+  const link = r.headers.get("Link");
+  const m = link && link.match(/<([^>]+)>;\s*rel="last"/);
+  if (m) { r = await fetch(m[1]); if (!r.ok) throw new Error(r.status); }
+  const arr = await r.json();
+  const d = arr[0] && arr[0].commit && arr[0].commit.committer && arr[0].commit.committer.date;
+  if (!d) throw new Error("sin fecha");
+  try { localStorage.setItem(k, d); } catch (e) {}
+  return d;
+}
+
+function hace(iso) {
+  const t = new Date(iso);
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return "hace un momento";
+  if (m < 60) return `hace ${m} ${m === 1 ? "minuto" : "minutos"}`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `hace ${h} ${h === 1 ? "hora" : "horas"}`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `hace ${d} ${d === 1 ? "día" : "días"}`;
+  return t.toLocaleDateString("sv-SE");
+}
+const etiqueta = x => x.iso ? hace(x.iso) : x.fecha;
+
+async function cargarPosts() {
+  if (POSTLIST) return POSTLIST;
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${CARPETA}`);
+  if (!r.ok) throw new Error(r.status);
+  const files = await r.json();
+  POSTLIST = files.filter(f => f.type === "file" && /\.txt$/i.test(f.name)).map(f => {
+    const base = f.name.replace(/\.txt$/i, "");
+    const m = base.match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
+    return { name: f.name, id: "p-" + slug(base), fecha: m ? m[1] : "", titulo: m ? m[2] : base };
+  });
+  await Promise.all(POSTLIST.map(async x => { try { x.iso = await fechaCreacion(x.name); } catch (e) { x.iso = ""; } }));
+  POSTLIST.sort((a, b) => (b.iso || "").localeCompare(a.iso || "") || b.name.localeCompare(a.name));
+  return POSTLIST;
+}
+
+const actual = () => decodeURIComponent(location.hash.slice(1)) || "inicio";
+
+async function render() {
+  const h = actual();
   window.scrollTo(0, 0);
+  if (h === "acerca") app.innerHTML = `<h2>&gt; ACERCA</h2><div class="box body">${parrafos(ACERCA)}</div>`;
+  else if (h === "posts" || h.startsWith("p-")) {
+    app.innerHTML = "<p class='dim'>cargando...</p>";
+    try {
+      const list = await cargarPosts();
+      if (actual() !== h) return;
+      if (h === "posts") {
+        app.innerHTML = "<h2>&gt; POSTS</h2>" + (list.map(x => `<div class="post-item">${etiqueta(x) ? `<span class="dim">[${esc(etiqueta(x))}]</span> ` : ""}<a class="t" href="#${x.id}">${esc(x.titulo)}</a></div>`).join("") || "<p class='dim'>No hay posts todavía.</p>");
+      } else {
+        const p = list.find(x => x.id === h);
+        if (!p) { location.hash = "posts"; return; }
+        const r = await fetch(`${CARPETA}/${encodeURIComponent(p.name)}`, { cache: "no-store" });
+        if (!r.ok) throw new Error(r.status);
+        const texto = (await r.text()).replace(/\r/g, "").trim().split(/\n\s*\n/).filter(Boolean);
+        if (actual() !== h) return;
+        app.innerHTML = `<h2>&gt; ${esc(p.titulo)}</h2>${etiqueta(p) ? `<div class="dim">[${esc(etiqueta(p))}]</div>` : ""}<div class="box body">${parrafos(texto)}</div><a href="#posts">&lt;-- volver</a>`;
+      }
+    } catch (e) {
+      if (actual() === h) app.innerHTML = "<div class='box'>No se pudieron cargar los posts.</div>";
+    }
+  }
+  else app.innerHTML = "<h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(x.fecha)}]</span> <span class="t">${esc(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
 }
 
 fetch("entradas.txt", { cache: "no-store" })
