@@ -18,6 +18,7 @@
         6. CARTEL NUEVO .. el boton parpadeante ">>> Nuev0 <<<"
         7. DECORACION .... simbolos rojos de las esquinas y del fondo
         8. ANIMACIONES ... parpadeos
+        9. VENTANAS VIRUS  aspecto de las ventanitas fijas
   HTML  A. DECORACION .... 4 esquinas (svg) + simbolos sueltos (.mid)
         B. PAGINA ........ cabecera, menu, <main id="app">, pie
   JS    1. CONFIGURACION . repo, carpeta de posts, texto de ACERCA
@@ -25,12 +26,16 @@
         3. MENSAJES ...... lee entradas.txt (pestana inicio / MSG)
         4. POSTS ......... lee la carpeta posts/ desde GitHub
         5. VISTAS ........ lo que se dibuja en cada pestana
-        6. ARRANQUE ...... lo que se ejecuta al abrir la pagina
+        6. VENTANAS ...... crea las ventanas virus desde la lista VENTANAS
+        7. ARRANQUE ...... lo que se ejecuta al abrir la pagina
 
   DONDE TOCAR PARA...
     - cambiar el texto de "acerca" ........ JS 1. CONFIGURACION
     - agregar/quitar links de "acerca" .... JS 1. CONFIGURACION (LINKS)
     - cambiar colores ..................... CSS 1. BASE (:root)
+    - agregar/quitar/cambiar ventanas virus JS 1. CONFIGURACION (VENTANAS)
+        (texto, pestanas donde salen y esquina opcional; para apagar una, ponle // al inicio)
+    - cambiar el aspecto de las ventanas .. CSS 9
     - agregar un mensaje corto ............ editar entradas.txt
     - agregar un post ..................... subir un .txt a posts/
         Recomendado: "2026-10-29 Titulo del post.txt"
@@ -124,6 +129,23 @@ a.nuevo.b, a.nuevo.b:hover, a.nuevo.b:focus { background:#fff; color:var(--red);
 .bk1 { animation:k1 5s steps(1,end) infinite; }
 .bk2 { animation:k2 3.3s ease-in-out infinite; }
 .bk3 { animation:k3 8s steps(1,end) infinite; }
+
+/* ================================================================
+   CSS 9. VENTANAS VIRUS (la posicion la pone el JS desde VENTANAS)
+   ================================================================ */
+.virus { position:fixed; z-index:5; width:min(250px,72vw); background:#000; border:2px solid var(--red); box-shadow:0 0 14px rgba(255,26,26,.6), 6px 6px 0 rgba(255,26,26,.35); font-size:13px; line-height:1.35; cursor:default; user-select:none; }
+.v-bar { display:flex; justify-content:space-between; align-items:center; background:var(--red); color:#000; font-weight:bold; padding:2px 6px; }
+.v-x { font:inherit; color:#000; background:none; border:1px solid #000; padding:0 8px; line-height:1.2; cursor:pointer; }
+.v-x:hover { background:#000; color:var(--red); }
+.v-body { padding:10px; }
+.v-prog { border:1px solid var(--red); height:12px; margin:8px 0; padding:1px; }
+.v-prog i { display:block; height:100%; background:var(--red); animation:vp 5s steps(20,end) infinite; }
+.v-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+.v-btns button { font:inherit; color:var(--fg); background:none; border:1px solid var(--fg); padding:1px 10px; cursor:pointer; }
+.v-btns button:hover { background:var(--red); color:#000; border-color:var(--red); }
+.virus.tiembla { animation:vs .4s; }
+@keyframes vp { from { width:0; } to { width:99%; } }
+@keyframes vs { 0%,100%{transform:translate(0)} 20%{transform:translate(-6px,2px)} 40%{transform:translate(5px,-3px)} 60%{transform:translate(-4px,-2px)} 80%{transform:translate(4px,3px)} }
 </style>
 </head>
 <body>
@@ -244,12 +266,36 @@ const CARPETA = "posts";           // carpeta donde van los posts (.txt)
 const ARCHIVO_MSG = "entradas.txt";// archivo de mensajes cortos (inicio)
 
 // Texto de la pestana "acerca" (un elemento = un parrafo)
-const ACERCA = ["Cuando me aburro lo suficientemente escribo aqui.     en pocas palabras me hago el interesante"];
+const ACERCA = ["cuando me aburro lo suficientemente escribo aqui."];
 
 // Links de la pestana "acerca": ["texto que se ve", "direccion"]
 // Se muestran como [ texto ] arriba del cuadro. Para agregar otro, copia la linea de IG.
 const LINKS = [
   ["IG", "https://www.instagram.com/hyrumzzz/"],
+];
+
+// Ventanas "virus" fijas en una esquina. Una linea = una ventana.
+//   titulo:   texto de la barra roja
+//   error:    linea en negrita
+//   texto:    lineas de texto (lista)
+//   barra:    true = barra de progreso que se llena
+//   botones:  textos de los botones (lista; omitela si no quieres botones)
+//   esquina:  (opcional) "arriba-izquierda" | "arriba-derecha" | "abajo-izquierda" | "abajo-derecha"
+//             Si la omites, la ventana sale en un sitio AL AZAR de la pantalla.
+//   en:       pestanas donde sale: "inicio", "posts", "acerca" (si la omites, sale en todas)
+// Se cierran con la x o con cualquier boton; vuelven al recargar la pagina.
+// Dos ventanas en la misma esquina se apilan con un pequeno desfase.
+const VENTANAS = [
+  { titulo: "VIRUS.EXE", error: "ERROR 0x666", texto: ["este blog ha sido infectado.", "no cierres esta ventana."], barra: true, botones: ["OK", "CANCELAR"] },
+
+  // ----- MAS VENTANAS (pon // al principio de una linea para apagarla) -----
+  { titulo: "ESCANEO", error: "ESCANEANDO...", texto: ["99% completado desde hace 67 dias."], barra: true, en: ["inicio"] },
+  { titulo: "SISTEMA", error: "SISTEMA COMPROMETIDO", texto: ["alguien esta leyendo esto."], botones: ["OK"], en: ["inicio"] },
+  { titulo: "CONEXION", error: "CONEXION PERDIDA", texto: ["con la realidad.", "reintentando..."], barra: true, en: ["inicio"] },
+  { titulo: "ANTIVIRUS", error: "666 AMENAZAS", texto: ["ninguna de las amenazas eres tu.", "todavia."], botones: ["ELIMINAR", "IGNORAR"], en: ["inicio"] },
+  { titulo: "MEMORIA", error: "MEMORIA LLENA", texto: ["demasiados recuerdos inutiles.", "liberar espacio?"], botones: ["SI", "SI"], en: ["posts"] },
+  { titulo: "ACTUALIZACION", error: "INSTALANDO TU FUTURO", texto: ["no apagues el blog."], barra: true, en: ["acerca"] },
+  { titulo: "ERROR", error: "BLOG.EXE", texto: ["dejo de funcionar.", "no es tu culpa, nunca lo sera."], botones: ["OK"] },
 ];
 
 // Mensajes de error / aviso
@@ -430,6 +476,7 @@ async function vistaPost(h) {
 async function render() {
   const h = actual();
   window.scrollTo(0, 0);
+  actualizarVentanas();
   if (h === "acerca") vistaAcerca();
   else if (h === "posts") await vistaLista(h);
   else if (h.startsWith("p-")) await vistaPost(h);
@@ -438,7 +485,88 @@ async function render() {
 
 
 /* ================================================================
-   JS 6. ARRANQUE
+   JS 6. VENTANAS VIRUS  (se dibujan desde la lista VENTANAS de JS 1)
+   - Salen en un sitio al azar, y cambian de sitio al cambiar de pestana.
+   - Se cierran con la x o con cualquier boton (vuelven al recargar).
+   - Tocar el cuerpo de una ventana la hace temblar y la trae al frente.
+   ================================================================ */
+const ESQUINAS = ["arriba-izquierda", "arriba-derecha", "abajo-izquierda", "abajo-derecha"];
+const ventanasEl = [];    // una entrada por ventana: { el, en, esq, cerrada }
+let ultimaPestana = null; // para saber cuando cambiamos de pestana
+let zTop = 5;             // capa mas alta (la ventana tocada pasa al frente)
+
+function crearVentanas() {
+  const cuenta = {};   // cuantas ventanas fijas hay ya en cada esquina
+  VENTANAS.forEach(v => {
+    const d = document.createElement("div");
+    d.className = "virus";
+    const botones = (v.botones || []).map(b => `<button type="button">${esc(b)}</button>`).join("");
+    d.innerHTML =
+      `<div class="v-bar"><span>${esc(v.titulo || "")}</span><button type="button" class="v-x" aria-label="cerrar">x</button></div>` +
+      `<div class="v-body">${v.error ? `<b>${esc(v.error)}</b><br>` : ""}${(v.texto || []).map(t => esc(t)).join("<br>")}` +
+      `${v.barra ? '<div class="v-prog"><i></i></div>' : ""}${botones ? `<div class="v-btns">${botones}</div>` : ""}</div>`;
+    const item = { el: d, en: v.en, esq: ESQUINAS.includes(v.esquina) ? v.esquina : "", cerrada: false };
+    // ventana con esquina fija (opcional): se apila con un pequeno desfase
+    if (item.esq) {
+      const [vert, horiz] = item.esq.split("-");
+      const n = cuenta[item.esq] || 0;
+      cuenta[item.esq] = n + 1;
+      d.style[vert === "arriba" ? "top" : "bottom"] = (14 + n * 26) + "px";
+      d.style[horiz === "izquierda" ? "left" : "right"] = (14 + n * 16) + "px";
+    }
+    d.addEventListener("pointerdown", () => { d.style.zIndex = ++zTop; });
+    d.addEventListener("click", e => {
+      if (e.target.closest("button")) { item.cerrada = true; d.style.display = "none"; }   // x o boton: cerrar
+      else { d.classList.remove("tiembla"); void d.offsetWidth; d.classList.add("tiembla"); } // cuerpo: temblar
+    });
+    document.body.appendChild(d);
+    ventanasEl.push(item);
+  });
+  actualizarVentanas();
+}
+
+// Pone una ventana en un sitio al azar, siempre dentro de la pantalla
+function ponerAlAzar(d) {
+  const margen = 8;
+  const x = Math.max(0, window.innerWidth - d.offsetWidth - 2 * margen);
+  const y = Math.max(0, window.innerHeight - d.offsetHeight - 2 * margen);
+  d.style.left = (margen + Math.random() * x) + "px";
+  d.style.top = (margen + Math.random() * y) + "px";
+}
+
+// Pestana en la que estamos: "inicio", "posts" o "acerca"
+function pestanaActual() {
+  const h = actual();
+  return h === "acerca" ? "acerca" : (h === "posts" || h.startsWith("p-")) ? "posts" : "inicio";
+}
+
+// Muestra/oculta cada ventana segun su campo "en" y si ya la cerraste;
+// al cambiar de pestana, las que salen cambian de sitio
+function actualizarVentanas() {
+  const p = pestanaActual();
+  const cambio = p !== ultimaPestana;
+  ultimaPestana = p;
+  ventanasEl.forEach(it => {
+    const sale = !it.cerrada && (!it.en || it.en.includes(p));
+    it.el.style.display = sale ? "" : "none";
+    if (sale && cambio && !it.esq) ponerAlAzar(it.el);
+  });
+}
+
+// Si cambia el tamano de la pantalla, las ventanas no se quedan fuera
+function ajustarVentanas() {
+  ventanasEl.forEach(it => {
+    if (it.esq || it.el.style.display === "none") return;
+    const x = Math.max(0, window.innerWidth - it.el.offsetWidth - 8);
+    const y = Math.max(0, window.innerHeight - it.el.offsetHeight - 8);
+    it.el.style.left = Math.min(parseFloat(it.el.style.left) || 0, x) + "px";
+    it.el.style.top = Math.min(parseFloat(it.el.style.top) || 0, y) + "px";
+  });
+}
+
+
+/* ================================================================
+   JS 7. ARRANQUE
    ================================================================ */
 // Carga los mensajes y dibuja la pagina
 fetch(ARCHIVO_MSG + "?v=" + Date.now(), { cache: "no-store" })
@@ -448,6 +576,10 @@ fetch(ARCHIVO_MSG + "?v=" + Date.now(), { cache: "no-store" })
 
 // Cambiar de pestana
 addEventListener("hashchange", render);
+
+// Ventanas virus (ver JS 6)
+crearVentanas();
+addEventListener("resize", ajustarVentanas);
 
 // Parpadeo del cartel "Nuev0"
 setInterval(() => document.querySelectorAll(".nuevo").forEach(e => e.classList.toggle("b")), 400);
