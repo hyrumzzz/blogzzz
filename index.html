@@ -32,8 +32,11 @@
     - cambiar colores ..................... CSS 1. BASE (:root)
     - agregar un mensaje corto ............ editar entradas.txt
     - agregar un post ..................... subir un .txt a posts/
-        Nombre recomendado: "2026-10-29 Titulo del post.txt"
-        (con la fecha al inicio no se gasta el limite de la API)
+        Recomendado: "2026-10-29 Titulo del post.txt"
+        Segundo post del mismo dia: "2026-10-29-1 Otro titulo.txt"
+        (el numero mayor sale primero; sin numero = 0)
+        Sin fecha en el nombre tambien funciona (usa el primer commit,
+        pero si lo renombras despues la fecha se reinicia).
 =====================================================================
 -->
 
@@ -241,6 +244,7 @@ const ARCHIVO_MSG = "entradas.txt";// archivo de mensajes cortos (inicio)
 const ACERCA = ["cuando me aburro lo suficientemente escribo aqui."];
 
 // Mensajes de error / aviso
+const ERR_ENTRADAS = "<div class='box'>Algo ha salido mal, no es tu culpa, nunca lo será.</div>";
 const ERR_POSTS = "<div class='box'>No se pudieron cargar los posts.</div>";
 const AVISO_PUBLICANDO = "<div class='box'>Este post aun se esta publicando. Intenta de nuevo en un minuto.</div><a href=\"#posts\">&lt;-- volver</a>";
 
@@ -302,10 +306,14 @@ function parse(raw) {
 
 /* ================================================================
    JS 4. POSTS  (carpeta posts/, lista desde la API de GitHub)
-   - Si el archivo empieza con fecha ("2026-10-29 Titulo.txt") la fecha
-     sale del nombre y NO se hace ninguna consulta extra.
-   - Si no tiene fecha, se consulta el primer commit del archivo
-     (gasta peticiones de la API; el resultado se guarda en el navegador).
+   - Con fecha en el nombre ("2026-10-29 Titulo.txt") la fecha sale del
+     nombre y no se hace ninguna consulta extra. Si hay varios posts el
+     mismo dia se numeran: "2026-10-29-1 Titulo.txt", "2026-10-29-2 ..."
+     (numero mayor = mas nuevo; sin numero cuenta como 0).
+   - Sin fecha en el nombre, la fecha es la del primer commit del archivo
+     (se consulta una vez por navegador y se guarda). Si ese archivo se
+     renombra, GitHub cuenta la fecha desde el cambio de nombre.
+   - La lista usa 1 peticion por visita (la API permite 60 por hora por IP).
    ================================================================ */
 async function fechaCreacion(name) {
   const k = "pd:" + name;
@@ -323,7 +331,9 @@ async function fechaCreacion(name) {
 }
 
 // Clave para ordenar (mas nuevo primero)
-const claveOrden = x => x.iso || (x.fecha ? x.fecha + "T23:59:59Z" : "");
+//  - con fecha en el nombre: la fecha + el numero ("-1", "-2"...) para desempatar el mismo dia
+//  - sin fecha en el nombre: la fecha del primer commit del archivo
+const claveOrden = x => x.iso || (x.fecha ? x.fecha + "T23:59:" + String(x.orden).padStart(2, "0") + "Z" : "");
 
 async function leerPosts() {
   const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${CARPETA}`);
@@ -331,10 +341,10 @@ async function leerPosts() {
   const files = await r.json();
   const lista = files.filter(f => f.type === "file" && /\.txt$/i.test(f.name)).map(f => {
     const base = f.name.replace(/\.txt$/i, "");
-    const m = base.match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
-    return { name: f.name, id: "p-" + slug(base), fecha: m ? m[1] : "", titulo: m ? m[2] : base };
+    const m = base.match(/^(\d{4}-\d{2}-\d{2})(?:-(\d{1,2}))?\s+(.+)$/);
+    return { name: f.name, id: "p-" + slug(base), fecha: m ? m[1] : "", orden: m && m[2] ? +m[2] : 0, titulo: m ? m[3] : base };
   });
-  // solo los posts SIN fecha en el nombre necesitan consultar commits
+  // solo los posts SIN fecha en el nombre consultan su primer commit (se guarda en el navegador)
   await Promise.all(lista.filter(x => !x.fecha).map(async x => {
     try { x.iso = await fechaCreacion(x.name); } catch (e) { x.iso = ""; }
   }));
@@ -421,7 +431,7 @@ async function render() {
 fetch(ARCHIVO_MSG + "?v=" + Date.now(), { cache: "no-store" })
   .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
   .then(t => { POSTS = parse(t).reverse(); render(); })
-  .catch(() => { app.innerHTML = "<div class='box'>No se pudieron cargar las entradas.</div>"; });
+  .catch(() => { app.innerHTML = ERR_ENTRADAS; });
 
 // Cambiar de pestana
 addEventListener("hashchange", render);
