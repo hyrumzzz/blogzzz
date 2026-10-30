@@ -285,6 +285,9 @@ const LINKS = [
 //   en:       pestanas donde sale: "inicio", "posts", "acerca" (si la omites, sale en todas)
 // Se cierran con la x o con cualquier boton; vuelven al recargar la pagina.
 // Dos ventanas en la misma esquina se apilan con un pequeno desfase.
+// Cuantas ventanas salen a la vez. Al cambiar de pestana se eligen otras AL AZAR
+// entre las que tengan esa pestana en "en" (o no tengan "en").
+const MAX_VENTANAS = 2;
 const VENTANAS = [
   { titulo: "VIRUS.EXE", error: "ERROR 0x666", texto: ["este blog ha sido infectado.", "no cierres esta ventana."], barra: true, botones: ["OK", "CANCELAR"] },
 
@@ -486,7 +489,7 @@ async function render() {
 
 /* ================================================================
    JS 6. VENTANAS VIRUS  (se dibujan desde la lista VENTANAS de JS 1)
-   - Salen en un sitio al azar, y cambian de sitio al cambiar de pestana.
+   - Solo salen MAX_VENTANAS (2) a la vez, elegidas al azar en cada pestana.
    - Se cierran con la x o con cualquier boton (vuelven al recargar).
    - Tocar el cuerpo de una ventana la hace temblar y la trae al frente.
    ================================================================ */
@@ -505,7 +508,7 @@ function crearVentanas() {
       `<div class="v-bar"><span>${esc(v.titulo || "")}</span><button type="button" class="v-x" aria-label="cerrar">x</button></div>` +
       `<div class="v-body">${v.error ? `<b>${esc(v.error)}</b><br>` : ""}${(v.texto || []).map(t => esc(t)).join("<br>")}` +
       `${v.barra ? '<div class="v-prog"><i></i></div>' : ""}${botones ? `<div class="v-btns">${botones}</div>` : ""}</div>`;
-    const item = { el: d, en: v.en, esq: ESQUINAS.includes(v.esquina) ? v.esquina : "", cerrada: false };
+    const item = { el: d, en: v.en, esq: ESQUINAS.includes(v.esquina) ? v.esquina : "", cerrada: false, activa: false };
     // ventana con esquina fija (opcional): se apila con un pequeno desfase
     if (item.esq) {
       const [vert, horiz] = item.esq.split("-");
@@ -540,14 +543,24 @@ function pestanaActual() {
   return h === "acerca" ? "acerca" : (h === "posts" || h.startsWith("p-")) ? "posts" : "inicio";
 }
 
-// Muestra/oculta cada ventana segun su campo "en" y si ya la cerraste;
-// al cambiar de pestana, las que salen cambian de sitio
+// Al cambiar de pestana elige MAX_VENTANAS ventanas al azar entre las que
+// corresponden a esa pestana (campo "en"), las reabre y las pone en un sitio al azar.
+// Si no cambias de pestana (ej. de la lista a un post), se quedan como estan.
 function actualizarVentanas() {
   const p = pestanaActual();
   const cambio = p !== ultimaPestana;
   ultimaPestana = p;
+  if (cambio) {
+    const candidatas = ventanasEl.filter(it => !it.en || it.en.includes(p));
+    for (let k = candidatas.length - 1; k > 0; k--) {          // mezclar (Fisher-Yates)
+      const r = Math.floor(Math.random() * (k + 1));
+      [candidatas[k], candidatas[r]] = [candidatas[r], candidatas[k]];
+    }
+    const elegidas = new Set(candidatas.slice(0, MAX_VENTANAS));
+    ventanasEl.forEach(it => { it.activa = elegidas.has(it); it.cerrada = false; });
+  }
   ventanasEl.forEach(it => {
-    const sale = !it.cerrada && (!it.en || it.en.includes(p));
+    const sale = it.activa && !it.cerrada;
     it.el.style.display = sale ? "" : "none";
     if (sale && cambio && !it.esq) ponerAlAzar(it.el);
   });
