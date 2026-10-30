@@ -152,7 +152,7 @@ a.nuevo.b, a.nuevo.b:hover, a.nuevo.b:focus { background:#fff; color:var(--red);
 /* ================================================================
    CSS 10. CONEJO REBOTANDO (pestana acerca; la posicion la pone el JS)
    ================================================================ */
-.conejo { position:fixed; left:0; top:0; z-index:6; width:min(170px,45vw); background:#000; border:2px solid var(--red); box-shadow:0 0 14px rgba(255,26,26,.6), 6px 6px 0 rgba(255,26,26,.35); font-size:13px; line-height:1.35; user-select:none; will-change:transform; }
+.conejo { position:fixed; left:0; top:0; z-index:6; width:min(110px,45vw); background:#000; border:2px solid var(--red); box-shadow:0 0 14px rgba(255,26,26,.6), 6px 6px 0 rgba(255,26,26,.35); font-size:13px; line-height:1.35; user-select:none; will-change:transform; }
 .conejo img { display:block; width:100%; height:auto; cursor:pointer; -webkit-user-drag:none; }
 </style>
 </head>
@@ -313,6 +313,7 @@ const VENTANAS = [
 //   Click en la imagen = se duplica. La x lo cierra. Los cerrados no vuelven hasta recargar.
 const CONEJO_IMG = "conejo.png";
 const CONEJO_VEL = 110;   // velocidad en pixeles por segundo
+const CONEJO_ANCHO = 110;  // ancho de la ventana en pixeles (mas chico = mas pequena)
 
 // Mensajes de error / aviso
 const ERR_ENTRADAS = "<div class='box'>Algo ha salido mal, no es tu culpa, nunca lo será.</div>";
@@ -608,6 +609,7 @@ let conejoT = 0;           // tiempo del ultimo cuadro
 function crearConejo(x, y) {
   const d = document.createElement("div");
   d.className = "conejo";
+  d.style.width = `min(${CONEJO_ANCHO}px, 45vw)`;
   d.innerHTML = `<div class="v-bar"><span>CONEJO.PNG</span><button type="button" class="v-x" aria-label="cerrar">x</button></div><img src="${CONEJO_IMG}" alt="" draggable="false">`;
   document.body.appendChild(d);
   if (x === undefined) x = Math.random() * Math.max(0, window.innerWidth - d.offsetWidth);
