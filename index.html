@@ -29,6 +29,7 @@
 
   DONDE TOCAR PARA...
     - cambiar el texto de "acerca" ........ JS 1. CONFIGURACION
+    - agregar/quitar links de "acerca" .... JS 1. CONFIGURACION (LINKS)
     - cambiar colores ..................... CSS 1. BASE (:root)
     - agregar un mensaje corto ............ editar entradas.txt
     - agregar un post ..................... subir un .txt a posts/
@@ -76,6 +77,8 @@ nav a { margin-right:14px; }
 h2 { color:var(--red); margin:18px 0 4px; font-size:1.1em; }
 h2.row, .row h2 { margin-bottom:4px; }
 .body p { margin:0 0 14px; white-space:pre-wrap; }
+.links { margin:10px 0; }
+.links a { margin-right:14px; }
 .box { border:1px solid var(--red); padding:10px 14px; margin:14px 0; }
 .post-item { margin:14px 0; }
 .post-item .t { font-weight:bold; }
@@ -243,6 +246,12 @@ const ARCHIVO_MSG = "entradas.txt";// archivo de mensajes cortos (inicio)
 // Texto de la pestana "acerca" (un elemento = un parrafo)
 const ACERCA = ["cuando me aburro lo suficientemente escribo aqui."];
 
+// Links de la pestana "acerca": ["texto que se ve", "direccion"]
+// Se muestran como [ texto ] arriba del cuadro. Para agregar otro, copia la linea de IG.
+const LINKS = [
+  ["IG", "https://www.instagram.com/hyrumzzz/"],
+];
+
 // Mensajes de error / aviso
 const ERR_ENTRADAS = "<div class='box'>Algo ha salido mal, no es tu culpa, nunca lo será.</div>";
 const ERR_POSTS = "<div class='box'>No se pudieron cargar los posts.</div>";
@@ -364,7 +373,11 @@ function cargarPosts() {
    JS 5. VISTAS  (lo que aparece en cada pestana)
    ================================================================ */
 function vistaAcerca() {
-  app.innerHTML = `<h2>&gt; ACERCA</h2><div class="box body">${parrafos(ACERCA)}</div>`;
+  const links = LINKS
+    .filter(([t, u]) => /^https?:\/\//i.test(u))
+    .map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">[ ${esc(t)} ]</a>`)
+    .join("");
+  app.innerHTML = `<h2>&gt; ACERCA</h2>${links ? `<div class="links">${links}</div>` : ""}<div class="box body">${parrafos(ACERCA)}</div>`;
 }
 
 function vistaInicio(h) {
