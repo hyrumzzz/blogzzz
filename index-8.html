@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>[ BLOG ]</title>
+
+<!--
+=====================================================================
+  MAPA DEL ARCHIVO  (busca el titulo con Ctrl+F)
+=====================================================================
+  CSS   1. BASE .......... colores, fuente, fondo, enlaces
+        2. CABECERA ...... banner "BLOG" y mascota
+        3. NAVEGACION .... [ inicio ] [ posts ] [ acerca ]
+        4. CONTENIDO ..... titulos, cajas, lista de posts, mensajes
+        5. PIE ........... "> online" y cursor
+        6. CARTEL NUEVO .. el boton parpadeante ">>> Nuev0 <<<"
+        7. DECORACION .... simbolos rojos de las esquinas y del fondo
+        8. ANIMACIONES ... parpadeos
+        9. VENTANAS VIRUS  aspecto de las ventanitas fijas
+       10. CONEJO ........ aspecto del conejo que rebota (acerca)
+       11. EFECTOS ....... aspecto de los textos con simbolos (*texto*, etc.)
+  HTML  A. DECORACION .... 4 esquinas (svg) + simbolos sueltos (.mid)
+        B. PAGINA ........ cabecera, menu, <main id="app">, pie
+  JS    1. CONFIGURACION . repo, carpeta de posts, texto de ACERCA
+        2. UTILIDADES .... funciones pequenas de apoyo
+       2b. EFECTOS ....... convierte los simbolos de los textos en efectos
+        3. MENSAJES ...... lee entradas.txt (pestana inicio / MSG)
+        4. POSTS ......... lee la carpeta posts/ desde GitHub
+        5. VISTAS ........ lo que se dibuja en cada pestana
+        6. VENTANAS ...... crea las ventanas virus desde la lista VENTANAS
+        6b. CONEJO ....... conejo que rebota y se duplica en acerca
+        7. ARRANQUE ...... lo que se ejecuta al abrir la pagina
+
+  DONDE TOCAR PARA...
+    - cambiar el texto de "acerca" ........ JS 1. CONFIGURACION
+    - agregar/quitar links de "acerca" .... JS 1. CONFIGURACION (LINKS)
+    - cambiar colores ..................... CSS 1. BASE (:root)
+    - agregar/quitar/cambiar ventanas virus JS 1. CONFIGURACION (VENTANAS)
+        (texto, pestanas donde salen y esquina opcional; para apagar una, ponle // al inicio)
+    - cambiar el aspecto de las ventanas .. CSS 9
+    - cambiar el aspecto de los efectos ... CSS 11
+    - cambiar los simbolos de los efectos . JS 2b (FX_MAP y FX_RE)
+    - agregar un mensaje corto ............ editar entradas.txt
+    - agregar un post ..................... subir un .txt a posts/
+        Recomendado: "2026-10-29 Titulo del post.txt"
+        Segundo post del mismo dia: "2026-10-29-1 Otro titulo.txt"
+        (el numero mayor sale primero; sin numero = 0)
+        Sin fecha en el nombre tambien funciona (usa el primer commit,
+        pero si lo renombras despues la fecha se reinicia).
+
+  EFECTOS DE TEXTO (en posts, mensajes y acerca; el simbolo va pegado al texto):
+    *rojo*  #invertido#  _subrayado_  ~tachado~  ^grande^  @brillo@  %glitch%
+    <<parpadea<<  >>escribiendo>>  +eco+  ?spoiler?  =cuadro=  $hackeado$
+    [[etiqueta]]  ((susurro))
+=====================================================================
+-->
+
+<style>
+/* ================================================================
+   CSS 1. BASE
+   ================================================================ */
+:root { --bg:#000; --fg:#f2f2f2; --red:#ff1a1a; --dim:#8a8a8a; color-scheme:dark; }
+* { box-sizing: border-box; }
+html { background:var(--bg); min-height:100%; }
+body { margin:0; min-height:100vh; background:var(--bg); color:var(--fg); font-family:"Courier New", Consolas, monospace; font-size:16px; line-height:1.55; padding:24px 16px 60px; }
+.wrap { max-width:820px; margin:0 auto; position:relative; z-index:1; }
+pre { margin:0; font-family:inherit; overflow-x:auto; }
+a { color:var(--fg); text-decoration:none; }
+a:hover, a:focus { background:var(--red); color:#000; outline:none; }
+::selection { background:var(--red); color:#000; }
+.dim { color:var(--dim); }
+.rule { color:var(--red); white-space:pre; overflow:hidden; }
+
+/* ================================================================
+   CSS 2. CABECERA (banner + mascota)
+   ================================================================ */
+.head { display:flex; align-items:center; gap:clamp(12px,3vw,26px); }
+.head .banner { flex:0 1 auto; min-width:0; }
+.banner { color:var(--red); font-size:clamp(7px, 2vw, 14px); line-height:1.1; }
+.mascot { height:clamp(64px,15vw,112px); width:auto; flex:none; pointer-events:none; filter:drop-shadow(0 0 5px rgba(255,26,26,.45)); }
+
+/* ================================================================
+   CSS 3. NAVEGACION
+   ================================================================ */
+nav { margin:12px 0; }
+nav a { margin-right:14px; }
+
+/* ================================================================
+   CSS 4. CONTENIDO (titulos, cajas, posts, mensajes)
+   ================================================================ */
+h2 { color:var(--red); margin:18px 0 4px; font-size:1.1em; }
+h2.row, .row h2 { margin-bottom:4px; }
+.body p { margin:0 0 14px; white-space:pre-wrap; }
+.links { margin:10px 0; }
+.links a { margin-right:14px; }
+.box { border:1px solid var(--red); padding:10px 14px; margin:14px 0; }
+.post-item { margin:14px 0; }
+.post-item .t { font-weight:bold; }
+.row { display:flex; justify-content:space-between; align-items:baseline; gap:14px; }
+.row .f { flex:none; white-space:nowrap; text-align:right; }
+.big { margin:24px 0; }
+.big .t { font-size:1.7em; line-height:1.25; font-weight:bold; }
+
+/* ================================================================
+   CSS 5. PIE
+   ================================================================ */
+footer { margin-top:30px; }
+.cursor { display:inline-block; width:9px; height:1em; background:var(--red); vertical-align:-2px; animation:b 1s steps(1) infinite; }
+
+/* ================================================================
+   CSS 6. CARTEL NUEVO  (el boton que parpadea blanco/rojo)
+   ================================================================ */
+a.nuevo, a.nuevo:hover, a.nuevo:focus { display:inline-block; margin:6px 0 2px; padding:4px 10px; border:2px solid #fff; font-weight:bold; background:var(--red); color:#fff; }
+a.nuevo.b, a.nuevo.b:hover, a.nuevo.b:focus { background:#fff; color:var(--red); border-color:var(--red); }
+
+/* ================================================================
+   CSS 7. DECORACION (simbolos de las esquinas y del fondo)
+   ================================================================ */
+/* Esquinas: tamano y posicion de cada svg */
+.art { position:fixed; height:auto; overflow:visible; pointer-events:none; z-index:0; filter:drop-shadow(0 0 5px rgba(255,26,26,.45)); font-family:"Segoe UI Symbol","Noto Sans Symbols 2","Noto Sans Symbols","Apple Symbols","Symbola","DejaVu Sans","Courier New",monospace,sans-serif; }
+.a-tl { top:0; left:0; width:clamp(110px,24vw,260px); }
+.a-tr { top:0; right:0; width:clamp(130px,30vw,330px); }
+.a-bl { bottom:0; left:0; width:clamp(150px,32vw,360px); }
+.a-br { bottom:0; right:0; width:clamp(140px,30vw,340px); }
+@media (max-width:700px) { .art { opacity:.6; } }
+
+/* Simbolos sueltos del fondo (.mid) */
+.mid { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; font-family:"Segoe UI Symbol","Noto Sans Symbols 2","Noto Sans Symbols","Apple Symbols","Symbola","DejaVu Sans","Courier New",monospace,sans-serif; }
+.mid span { position:absolute; color:var(--red); opacity:var(--o,.35); line-height:1; text-shadow:0 0 6px rgba(255,26,26,.5); }
+
+/* ================================================================
+   CSS 8. ANIMACIONES (parpadeos: .bk1 .bk2 .bk3)
+   ================================================================ */
+@keyframes b  { 50% { opacity:0; } }
+@keyframes k1 { 0%,38%,48%,100%{opacity:var(--o,1)} 40%{opacity:.08} 43%{opacity:var(--o,1)} 45%{opacity:.2} }
+@keyframes k2 { 0%,100%{opacity:var(--o,1)} 50%{opacity:.12} }
+@keyframes k3 { 0%,88%,100%{opacity:var(--o,1)} 90%{opacity:0} 94%{opacity:var(--o,1)} 96%{opacity:0} }
+.bk1 { animation:k1 5s steps(1,end) infinite; }
+.bk2 { animation:k2 3.3s ease-in-out infinite; }
+.bk3 { animation:k3 8s steps(1,end) infinite; }
+
+/* ================================================================
+   CSS 9. VENTANAS VIRUS (la posicion la pone el JS desde VENTANAS)
+   ================================================================ */
+.virus { position:fixed; z-index:5; width:min(250px,72vw); background:#000; border:2px solid var(--red); box-shadow:0 0 14px rgba(255,26,26,.6), 6px 6px 0 rgba(255,26,26,.35); font-size:13px; line-height:1.35; cursor:default; user-select:none; }
+.v-bar { display:flex; justify-content:space-between; align-items:center; background:var(--red); color:#000; font-weight:bold; padding:2px 6px; }
+.v-x { font:inherit; color:#000; background:none; border:1px solid #000; padding:0 8px; line-height:1.2; cursor:pointer; }
+.v-x:hover { background:#000; color:var(--red); }
+.v-body { padding:10px; }
+.v-prog { border:1px solid var(--red); height:12px; margin:8px 0; padding:1px; }
+.v-prog i { display:block; height:100%; background:var(--red); animation:vp 5s steps(20,end) infinite; }
+.v-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+.v-btns button { font:inherit; color:var(--fg); background:none; border:1px solid var(--fg); padding:1px 10px; cursor:pointer; }
+.v-btns button:hover { background:var(--red); color:#000; border-color:var(--red); }
+.virus.tiembla { animation:vs .4s; }
+@keyframes vp { from { width:0; } to { width:99%; } }
+@keyframes vs { 0%,100%{transform:translate(0)} 20%{transform:translate(-6px,2px)} 40%{transform:translate(5px,-3px)} 60%{transform:translate(-4px,-2px)} 80%{transform:translate(4px,3px)} }
+
+/* ================================================================
+   CSS 10. CONEJO REBOTANDO (pestana acerca; la posicion la pone el JS)
+   ================================================================ */
+.conejo { position:fixed; left:0; top:0; z-index:6; width:min(110px,45vw); background:#000; border:2px solid var(--red); box-shadow:0 0 14px rgba(255,26,26,.6), 6px 6px 0 rgba(255,26,26,.35); font-size:13px; line-height:1.35; user-select:none; will-change:transform; }
+.conejo img { display:block; width:100%; height:auto; cursor:pointer; -webkit-user-drag:none; }
+
+/* ================================================================
+   CSS 11. EFECTOS DE TEXTO (los simbolos *texto*, <<texto<<, etc.)
+   ================================================================ */
+.fx-r { color:var(--red); }
+.fx-inv { background:var(--red); color:#000; padding:0 .4ch; }
+.fx-u { text-decoration:underline; }
+.fx-s { text-decoration:line-through; color:var(--dim); }
+.fx-big { font-size:1.7em; line-height:1.2; }
+.fx-glow { color:var(--red); text-shadow:0 0 6px var(--red), 0 0 14px var(--red); }
+.fx-blink { animation:b 1s steps(1) infinite; }
+.fx-glitch { display:inline-block; animation:fg 2.4s infinite; }
+@keyframes fg { 0%,88%,100%{transform:none;text-shadow:none} 90%{transform:translate(-2px,1px);text-shadow:2px 0 #f22,-2px 0 #fff} 93%{transform:translate(2px,-1px);text-shadow:-2px 0 #f22,2px 0 #fff} 96%{transform:translate(-1px,0)} }
+.fx-eco { text-shadow:2px 2px 0 var(--red), 4px 4px 0 #5a1010; }
+.fx-spoil { cursor:pointer; background:#3a0a0a; color:transparent; border:1px solid var(--red); padding:0 .3ch; }
+.fx-spoil.open { background:none; color:inherit; border-color:transparent; }
+.fx-box { display:inline-block; vertical-align:top; white-space:pre; line-height:1.2; color:var(--red); max-width:100%; overflow-x:auto; }
+.fx-tag { color:var(--red); font-weight:bold; }
+.fx-hack { color:var(--red); }
+.fx-susurro { font-size:.82em; color:var(--dim); font-style:italic; }
+</style>
+</head>
+<body>
+
+<!-- ================================================================
+     HTML A. DECORACION
+     ================================================================ -->
+
+<!-- Esquina arriba-izquierda -->
+<svg class="art a-tl" viewBox="0 0 220 220" fill="#ff1a1a" aria-hidden="true">
+  <text class="bk1" x="165" y="40" font-size="44" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(18 165 40)">⸸</text>
+  <text x="190" y="125" font-size="28" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(-12 190 125)">☾</text>
+  <text class="bk2" x="22" y="38" font-size="24" text-anchor="middle" dominant-baseline="central" opacity="0.8" transform="rotate(0 22 38)">⌖</text>
+  <text class="bk3" x="70" y="12" font-size="30" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(0 70 12)">.</text>
+  <text x="200" y="200" font-size="20" text-anchor="middle" dominant-baseline="central" opacity="0.7" transform="rotate(0 200 200)">.</text>
+</svg>
+
+<!-- Esquina arriba-derecha -->
+<svg class="art a-tr" viewBox="0 0 260 240" fill="#ff1a1a" aria-hidden="true">
+  <text class="bk1" x="150" y="100" font-size="130" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(12 150 100)">🜏</text>
+  <text x="48" y="180" font-size="80" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(-28 48 180)">⸸</text>
+  <text class="bk2" x="215" y="205" font-size="66" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(20 215 205)">𖤐</text>
+  <text class="bk3" x="112" y="205" font-size="30" text-anchor="middle" dominant-baseline="central" opacity="0.85" transform="rotate(0 112 205)">⌖</text>
+  <text x="232" y="38" font-size="36" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(-15 232 38)">☾</text>
+  <text class="bk1" x="30" y="60" font-size="22" text-anchor="middle" dominant-baseline="central" opacity="0.6" transform="rotate(30 30 60)">☾</text>
+  <text x="90" y="40" font-size="34" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(0 90 40)">.</text>
+  <text class="bk2" x="200" y="140" font-size="26" text-anchor="middle" dominant-baseline="central" opacity="0.8" transform="rotate(0 200 140)">.</text>
+  <text class="bk3" x="20" y="120" font-size="22" text-anchor="middle" dominant-baseline="central" opacity="0.7" transform="rotate(0 20 120)">.</text>
+  <text x="245" y="120" font-size="20" text-anchor="middle" dominant-baseline="central" opacity="0.8" transform="rotate(10 245 120)">□</text>
+</svg>
+
+<!-- Esquina abajo-izquierda -->
+<svg class="art a-bl" viewBox="0 0 320 200" fill="#ff1a1a" aria-hidden="true">
+  <defs>
+    <path id="bl1" d="M20 195 C 10 130, 80 90, 100 130 C 115 160, 70 170, 90 215" fill="none"/>
+    <path id="bl2" d="M170 205 C 150 150, 200 110, 230 140 C 255 165, 215 185, 240 225" fill="none"/>
+  </defs>
+  <text font-size="30" letter-spacing="4" stroke="#ff1a1a" stroke-width="1" opacity="1" transform="translate(0 0)"><textPath href="#bl1">¿?¿?¿?¿?¿?¿?¿?¿?¿?¿?¿?¿?¿?¿?</textPath></text>
+  <text font-size="16" letter-spacing="6" opacity="0.8" transform="translate(12 8)"><textPath href="#bl1">. . . . . . . . . . . . . . . . . . . .</textPath></text>
+  <text font-size="27" letter-spacing="4" stroke="#ff1a1a" stroke-width="1" opacity="1" transform="translate(0 0)"><textPath href="#bl2">?¿?¿?¿?¿?¿?¿?¿?¿?¿?¿?¿</textPath></text>
+  <text font-size="14" letter-spacing="6" opacity="0.8" transform="translate(-12 -6)"><textPath href="#bl2">. . . . . . . . . . . . . . . . . . . .</textPath></text>
+  <text class="bk1" x="290" y="70" font-size="42" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(12 290 70)">☾</text>
+  <text x="150" y="50" font-size="28" text-anchor="middle" dominant-baseline="central" opacity="0.85" transform="rotate(0 150 50)">⌖</text>
+  <text class="bk2" x="40" y="70" font-size="38" text-anchor="middle" dominant-baseline="central" opacity="0.8" transform="rotate(-20 40 70)">⸸</text>
+  <text class="bk3" x="250" y="20" font-size="30" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(0 250 20)">.</text>
+  <text x="190" y="70" font-size="18" text-anchor="middle" dominant-baseline="central" opacity="0.8" transform="rotate(15 190 70)">□</text>
+  <text class="bk1" x="300" y="150" font-size="26" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(-8 300 150)">□</text>
+</svg>
+
+<!-- Esquina abajo-derecha -->
+<svg class="art a-br" viewBox="0 0 260 260" fill="#ff1a1a" aria-hidden="true">
+  <text font-size="16" text-anchor="middle" dominant-baseline="central" x="14 14 29 29 44 44 59 59 74 74 89 89 104 104 119 119 134 134 149 149 164 164 179 179 194 194 14 204 14 204 14 204 14 204 14 204 14 204 14 204 14 204 14 204 14 204 14 204" y="34 224 34 224 34 224 34 224 34 224 34 224 34 224 34 224 34 224 34 224 34 224 34 224 34 224 49 49 64 64 79 79 94 94 109 109 124 124 139 139 154 154 169 169 184 184 199 199">□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□</text>
+  <text font-size="18" text-anchor="middle" dominant-baseline="central" x="58 58 74 74 90 90 106 106 122 122 138 138 154 154 170 170 186 186 202 202 218 218 234 234 58 248 58 248 58 248 58 248 58 248 58 248 58 248 58 248 58 248 58 248" y="66 256 66 256 66 256 66 256 66 256 66 256 66 256 66 256 66 256 66 256 66 256 66 256 82 82 98 98 114 114 130 130 146 146 162 162 178 178 194 194 210 210 226 226">□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□</text>
+  <text font-size="16" text-anchor="middle" dominant-baseline="central" x="98 98 115 115 132 132 149 149 166 166 183 183 200 200 217 217 234 234 251 251 268 268 98 268 98 268 98 268 98 268 98 268 98 268 98 268 98 268 98 268" y="104 274 104 274 104 274 104 274 104 274 104 274 104 274 104 274 104 274 104 274 104 274 121 121 138 138 155 155 172 172 189 189 206 206 223 223 240 240 257 257">□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□</text>
+  <text x="150" y="175" font-size="64" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(10 150 175)">⸸</text>
+  <text class="bk2" x="205" y="150" font-size="44" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(-14 205 150)">🜏</text>
+  <text class="bk3" x="96" y="95" font-size="26" text-anchor="middle" dominant-baseline="central" opacity="0.9" transform="rotate(-20 96 95)">☾</text>
+  <text x="40" y="250" font-size="34" text-anchor="middle" dominant-baseline="central" opacity="1" transform="rotate(0 40 250)">.</text>
+  <text class="bk1" x="230" y="40" font-size="26" text-anchor="middle" dominant-baseline="central" opacity="0.8" transform="rotate(0 230 40)">.</text>
+</svg>
+
+<!-- Simbolos sueltos del fondo (posicion en %, --o = opacidad) -->
+<div class="mid" aria-hidden="true">
+  <span class="bk2" style="left:18%;top:28%;--o:0.35;font-size:clamp(22px,4.0vw,36px);transform:rotate(-15deg)">⸸</span>
+  <span class="" style="left:78%;top:22%;--o:0.4;font-size:clamp(18px,3.3vw,30px);transform:rotate(20deg)">☾</span>
+  <span class="bk3" style="left:45%;top:12%;--o:0.5;font-size:clamp(24px,4.4vw,40px);transform:rotate(0deg)">.</span>
+  <span class="" style="left:62%;top:38%;--o:0.3;font-size:clamp(17px,3.1vw,28px);transform:rotate(-10deg)">¿</span>
+  <span class="bk1" style="left:30%;top:48%;--o:0.3;font-size:clamp(16px,2.9vw,26px);transform:rotate(12deg)">?</span>
+  <span class="bk2" style="left:70%;top:58%;--o:0.3;font-size:clamp(28px,5.1vw,46px);transform:rotate(8deg)">🜏</span>
+  <span class="bk1" style="left:12%;top:62%;--o:0.4;font-size:clamp(17px,3.1vw,28px);transform:rotate(0deg)">⌖</span>
+  <span class="" style="left:52%;top:72%;--o:0.3;font-size:clamp(13px,2.4vw,22px);transform:rotate(15deg)">□</span>
+  <span class="bk3" style="left:40%;top:84%;--o:0.3;font-size:clamp(24px,4.4vw,40px);transform:rotate(-20deg)">𖤐</span>
+  <span class="" style="left:88%;top:46%;--o:0.45;font-size:clamp(20px,3.8vw,34px);transform:rotate(0deg)">.</span>
+  <span class="" style="left:24%;top:14%;--o:0.3;font-size:clamp(14px,2.7vw,24px);transform:rotate(-25deg)">☾</span>
+  <span class="bk1" style="left:82%;top:80%;--o:0.35;font-size:clamp(14px,2.7vw,24px);transform:rotate(5deg)">¿?</span>
+  <span class="" style="left:6%;top:40%;--o:0.3;font-size:clamp(17px,3.1vw,28px);transform:rotate(10deg)">⸸</span>
+  <span class="bk2" style="left:60%;top:90%;--o:0.4;font-size:clamp(18px,3.3vw,30px);transform:rotate(0deg)">.</span>
+</div>
+
+<!-- ================================================================
+     HTML B. PAGINA
+     ================================================================ -->
+<div class="wrap">
+
+  <!-- Cabecera: banner + mascota (la imagen es el archivo mascota.png del repo) -->
+  <div class="head">
+<pre class="banner" aria-label="BLOG">
+ ____  _     ___   ____
+| __ )| |   / _ \ / ___|
+|  _ \| |  | | | | |  _
+| |_) | |__| |_| | |_| |
+|____/|_____\___/ \____|
+</pre>
+    <img class="mascot" alt="" aria-hidden="true" src="mascota.png">
+  </div>
+
+  <!-- Menu -->
+  <div class="rule">====================================================================================================</div>
+  <nav><a href="#inicio">[ inicio ]</a><a href="#posts">[ posts ]</a><a href="#acerca">[ acerca ]</a></nav>
+  <div class="rule">====================================================================================================</div>
+
+  <!-- Aqui el JS dibuja la pestana activa -->
+  <main id="app"></main>
+
+  <!-- Pie -->
+  <footer class="dim">
+    <div class="rule">----------------------------------------------------------------------------------------------------</div>
+    <div>&gt; online<span class="cursor"></span></div>
+  </footer>
+</div>
+
+<script>
+/* ================================================================
+   JS 1. CONFIGURACION
+   ================================================================ */
+const REPO = "hyrumzzz/blogzzz";   // usuario/repositorio en GitHub
+const CARPETA = "posts";           // carpeta donde van los posts (.txt)
+const ARCHIVO_MSG = "entradas.txt";// archivo de mensajes cortos (inicio)
+
+// Texto de la pestana "acerca" (un elemento = un parrafo)
+const ACERCA = ["cuando me aburro lo suficientemente escribo aqui. en pocas palabras, me hago el interesante/inteligente"];
+
+// Links de la pestana "acerca": ["texto que se ve", "direccion"]
+// Se muestran como [ texto ] arriba del cuadro. Para agregar otro, copia la linea de IG.
+const LINKS = [
+  ["IG", "https://www.instagram.com/hyrumzzz/"],
+];
+
+// Ventanas "virus" fijas en una esquina. Una linea = una ventana.
+//   titulo:   texto de la barra roja
+//   error:    linea en negrita
+//   texto:    lineas de texto (lista)
+//   barra:    true = barra de progreso que se llena
+//   botones:  textos de los botones (lista; omitela si no quieres botones)
+//   esquina:  (opcional) "arriba-izquierda" | "arriba-derecha" | "abajo-izquierda" | "abajo-derecha"
+//             Si la omites, la ventana sale en un sitio AL AZAR de la pantalla.
+//   en:       pestanas donde sale: "inicio", "posts", "acerca" (si la omites, sale en todas)
+// Se cierran con la x o con cualquier boton; vuelven al recargar la pagina.
+// Dos ventanas en la misma esquina se apilan con un pequeno desfase.
+// Cuantas ventanas salen a la vez. Al cambiar de pestana se eligen otras AL AZAR
+// entre las que tengan esa pestana en "en" (o no tengan "en").
+const MAX_VENTANAS = 2;
+const VENTANAS = [
+  { titulo: "VIRUS.EXE", error: "ERROR 0x666", texto: ["este blog ha sido infectado.", "no cierres esta ventana."], barra: true, botones: ["OK", "CANCELAR"] },
+
+  // ----- MAS VENTANAS (pon // al principio de una linea para apagarla) -----
+  { titulo: "ESCANEO", error: "ESCANEANDO...", texto: ["99% completado desde hace 67 dias."], barra: true, en: ["inicio"] },
+  { titulo: "SISTEMA", error: "SISTEMA COMPROMETIDO", texto: ["alguien esta leyendo esto."], botones: ["OK"], en: ["inicio"] },
+  { titulo: "CONEXION", error: "CONEXION PERDIDA", texto: ["con la realidad.", "reintentando..."], barra: true, en: ["inicio"] },
+  { titulo: "ANTIVIRUS", error: "666 AMENAZAS", texto: ["ninguna de las amenazas eres tu.", "todavia."], botones: ["ELIMINAR", "IGNORAR"], en: ["inicio"] },
+  { titulo: "MEMORIA", error: "MEMORIA LLENA", texto: ["demasiados recuerdos inutiles.", "liberar espacio?"], botones: ["SI", "SI"], en: ["posts"] },
+  { titulo: "ACTUALIZACION", error: "INSTALANDO TU FUTURO", texto: ["no apagues el blog."], barra: true, en: ["acerca"] },
+  { titulo: "ERROR", error: "BLOG.EXE", texto: ["dejo de funcionar.", "no es tu culpa, nunca lo sera."], botones: ["OK"] },
+];
+
+// Conejo que rebota en la pestana "acerca" (la imagen es conejo.png del repo)
+//   Click en la imagen = se duplica. La x lo cierra. Los cerrados no vuelven hasta recargar.
+const CONEJO_IMG = "conejo.png";
+const CONEJO_VEL = 110;   // velocidad en pixeles por segundo
+const CONEJO_ANCHO = 110;  // ancho de la ventana en pixeles (mas chico = mas pequena)
+
+// Mensajes de error / aviso
+const ERR_ENTRADAS = "<div class='box'>Algo ha salido mal, no es tu culpa, nunca lo será.</div>";
+const ERR_POSTS = "<div class='box'>No se pudieron cargar los posts.</div>";
+const AVISO_PUBLICANDO = "<div class='box'>Este post aun se esta publicando. Intenta de nuevo en un minuto.</div><a href=\"#posts\">&lt;-- volver</a>";
+
+const app = document.getElementById("app");
+
+
+/* ================================================================
+   JS 2. UTILIDADES
+   ================================================================ */
+// Escapa texto para que no se interprete como HTML
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// "La opinión de..." -> "la-opinion-de" (para los enlaces #p-...)
+const slug = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+
+// Lista de textos -> <p>...</p> (los saltos de linea simples se respetan; aqui se aplican los efectos, ver JS 2b)
+const parrafos = arr => arr.map(t => `<p>${fx(t)}</p>`).join("");
+
+// Pestana actual segun la direccion (#posts, #acerca, #p-...)
+const actual = () => {
+  try { return decodeURIComponent(location.hash.slice(1)) || "inicio"; }
+  catch (e) { return "inicio"; }
+};
+
+// "2026-10-29T16:29:12Z" -> "hace 3 horas" (o la fecha si pasaron 7+ dias)
+function hace(iso) {
+  const t = new Date(iso);
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return "hace un momento";
+  if (m < 60) return `hace ${m} ${m === 1 ? "minuto" : "minutos"}`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `hace ${h} ${h === 1 ? "hora" : "horas"}`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `hace ${d} ${d === 1 ? "día" : "días"}`;
+  return t.toLocaleDateString("sv-SE");
+}
+
+// Etiqueta de fecha que se muestra junto a cada post
+const etiqueta = x => x.iso ? hace(x.iso) : x.fecha;
+
+
+/* ================================================================
+   JS 2b. EFECTOS DE TEXTO
+   Convierte los simbolos de los textos en efectos (posts, mensajes, acerca).
+   El simbolo de apertura va pegado a la primera letra y el de cierre a la
+   ultima, todo en la misma linea. Los efectos no se combinan.
+     *rojo*  #invertido#  _subrayado_  ~tachado~  ^grande^  @brillo@  %glitch%
+     <<parpadea<<  >>escribiendo>>  +eco+  ?spoiler?  =cuadro=  $hackeado$
+     [[etiqueta]]  ((susurro))
+   Para cambiar un simbolo: edita FX_MAP (los de un solo caracter) o FX_RE.
+   El aspecto de cada efecto esta en CSS 11.
+   ================================================================ */
+const FX_MAP = {"*":"r","#":"inv","_":"u","~":"s","^":"big","@":"glow","%":"glitch","+":"eco","?":"spoil","=":"box","$":"hack"};
+const FX_RE = /\(\((.+?)\)\)|>>(?=\S)(.+?)(?<=\S)>>|<<(?=\S)(.+?)(?<=\S)<<|\[\[(.+?)\]\]|([*#_~^@%+?=$])(?=\S)(.+?)(?<=\S)\5/g;
+const plano = s => esc(s).replace(/\n/g, "<br>");
+
+function fx(src) {
+  let out = "", last = 0;
+  for (const m of src.matchAll(FX_RE)) {
+    out += plano(src.slice(last, m.index));
+    let k, t;
+    if (m[1] !== undefined) { k = "susurro"; t = m[1]; }
+    else if (m[2] !== undefined) { k = "type"; t = m[2]; }
+    else if (m[3] !== undefined) { k = "blink"; t = m[3]; }
+    else if (m[4] !== undefined) { k = "tag"; t = m[4]; }
+    else { k = FX_MAP[m[5]]; t = m[6]; }
+    const e = esc(t);
+    if (k === "box") { const b = "─".repeat([...t].length + 2); out += `<span class="fx-box">┌${b}┐\n│ ${e} │\n└${b}┘</span>`; }
+    else if (k === "tag") out += `<span class="fx-tag">[ ${e} ]</span>`;
+    else if (k === "susurro") out += `<span class="fx-susurro">(${e})</span>`;
+    else if (k === "type" || k === "hack") out += `<span class="fx-${k}" data-t="${e}">${e}</span>`;
+    else out += `<span class="fx-${k}">${e}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + plano(src.slice(last));
+}
+
+
+/* ================================================================
+   JS 3. MENSAJES  (pestana inicio, archivo entradas.txt)
+   Formato:   @@ 2026-10-29 | Texto del mensaje
+   ================================================================ */
+let POSTS = [];   // mensajes ya leidos (el mas nuevo primero)
+
+function parse(raw) {
+  return raw.replace(/\r/g, "").split(/^@@ /m).slice(1).map(chunk => {
+    const nl = chunk.indexOf("\n");
+    const head = (nl < 0 ? chunk : chunk.slice(0, nl)).split("|");
+    const fecha = head[0].trim();
+    const titulo = (head.slice(1).join("|") || "Sin título").trim();
+    const texto = (nl < 0 ? "" : chunk.slice(nl + 1)).trim().split(/\n\s*\n/).filter(Boolean);
+    return { id: fecha + "-" + slug(titulo), fecha, titulo, texto };
+  });
+}
+
+
+/* ================================================================
+   JS 4. POSTS  (carpeta posts/, lista desde la API de GitHub)
+   - Con fecha en el nombre ("2026-10-29 Titulo.txt") la fecha sale del
+     nombre y no se hace ninguna consulta extra. Si hay varios posts el
+     mismo dia se numeran: "2026-10-29-1 Titulo.txt", "2026-10-29-2 ..."
+     (numero mayor = mas nuevo; sin numero cuenta como 0).
+   - Sin fecha en el nombre, la fecha es la del primer commit del archivo
+     (se consulta una vez por navegador y se guarda). Si ese archivo se
+     renombra, GitHub cuenta la fecha desde el cambio de nombre.
+   - La lista usa 1 peticion por visita (la API permite 60 por hora por IP).
+   ================================================================ */
+async function fechaCreacion(name) {
+  const k = "pd:" + name;
+  try { const c = localStorage.getItem(k); if (c) return c; } catch (e) {}
+  let r = await fetch(`https://api.github.com/repos/${REPO}/commits?path=${encodeURIComponent(CARPETA + "/" + name)}&per_page=1`);
+  if (!r.ok) throw new Error(r.status);
+  const link = r.headers.get("Link");
+  const m = link && link.match(/<([^>]+)>;\s*rel="last"/);
+  if (m) { r = await fetch(m[1]); if (!r.ok) throw new Error(r.status); }
+  const arr = await r.json();
+  const d = arr[0] && arr[0].commit && arr[0].commit.committer && arr[0].commit.committer.date;
+  if (!d) throw new Error("sin fecha");
+  try { localStorage.setItem(k, d); } catch (e) {}
+  return d;
+}
+
+// Clave para ordenar (mas nuevo primero)
+//  - con fecha en el nombre: la fecha + el numero ("-1", "-2"...) para desempatar el mismo dia
+//  - sin fecha en el nombre: la fecha del primer commit del archivo
+const claveOrden = x => x.iso || (x.fecha ? x.fecha + "T23:59:" + String(x.orden).padStart(2, "0") + "Z" : "");
+
+async function leerPosts() {
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${CARPETA}`);
+  if (!r.ok) throw new Error(r.status);
+  const files = await r.json();
+  const lista = files.filter(f => f.type === "file" && /\.txt$/i.test(f.name)).map(f => {
+    const base = f.name.replace(/\.txt$/i, "");
+    const m = base.match(/^(\d{4}-\d{2}-\d{2})(?:-(\d{1,2}))?\s+(.+)$/);
+    return { name: f.name, id: "p-" + slug(base), fecha: m ? m[1] : "", orden: m && m[2] ? +m[2] : 0, titulo: m ? m[3] : base };
+  });
+  // solo los posts SIN fecha en el nombre consultan su primer commit (se guarda en el navegador)
+  await Promise.all(lista.filter(x => !x.fecha).map(async x => {
+    try { x.iso = await fechaCreacion(x.name); } catch (e) { x.iso = ""; }
+  }));
+  lista.sort((a, b) => claveOrden(b).localeCompare(claveOrden(a)) || b.name.localeCompare(a.name));
+  return lista;
+}
+
+// Una sola lectura por visita (las demas pestanas reutilizan el resultado)
+let POSTLIST_PROMISE = null;
+function cargarPosts() {
+  if (!POSTLIST_PROMISE) POSTLIST_PROMISE = leerPosts().catch(e => { POSTLIST_PROMISE = null; throw e; });
+  return POSTLIST_PROMISE;
+}
+
+
+/* ================================================================
+   JS 5. VISTAS  (lo que aparece en cada pestana)
+   ================================================================ */
+function vistaAcerca() {
+  const links = LINKS
+    .filter(([t, u]) => /^https?:\/\//i.test(u))
+    .map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">[ ${esc(t)} ]</a>`)
+    .join("");
+  app.innerHTML = `<h2>&gt; ACERCA</h2>${links ? `<div class="links">${links}</div>` : ""}<div class="box body">${parrafos(ACERCA)}</div>`;
+}
+
+function vistaInicio(h) {
+  app.innerHTML = "<div id='nuevo'></div><h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(x.fecha)}]</span> <span class="t">${esc(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
+  mostrarNuevo(h);
+}
+
+// Cartel parpadeante con el post mas reciente (arriba del inicio)
+async function mostrarNuevo(h) {
+  try {
+    const list = await cargarPosts();
+    const el = document.getElementById("nuevo");
+    if (!el || actual() !== h || !list.length) return;
+    const p = list[0];
+    el.innerHTML = `<a class="nuevo" href="#${p.id}">&gt;&gt;&gt; Nuev0: ${esc(p.titulo)} &lt;&lt;&lt;</a>`;
+  } catch (e) {}
+}
+
+async function vistaLista(h) {
+  app.innerHTML = "<p class='dim'>cargando...</p>";
+  try {
+    const list = await cargarPosts();
+    if (actual() !== h) return;
+    app.innerHTML = "<h2>&gt; POSTS</h2>" + (list.map(x => `<div class="post-item big row"><a class="t" href="#${x.id}">${esc(x.titulo)}</a>${etiqueta(x) ? `<span class="dim f">[${esc(etiqueta(x))}]</span>` : ""}</div>`).join("") || "<p class='dim'>No hay posts todavía.</p>");
+  } catch (e) {
+    if (actual() === h) app.innerHTML = ERR_POSTS;
+  }
+}
+
+async function vistaPost(h) {
+  app.innerHTML = "<p class='dim'>cargando...</p>";
+  try {
+    const list = await cargarPosts();
+    if (actual() !== h) return;
+    const p = list.find(x => x.id === h);
+    if (!p) { location.hash = "posts"; return; }
+    const r = await fetch(`${CARPETA}/${encodeURIComponent(p.name)}?v=${Date.now()}`, { cache: "no-store" });
+    if (actual() !== h) return;
+    if (r.status === 404) { app.innerHTML = AVISO_PUBLICANDO; return; }
+    if (!r.ok) throw new Error(r.status);
+    const texto = (await r.text()).replace(/\r/g, "").trim().split(/\n\s*\n/).filter(Boolean);
+    if (actual() !== h) return;
+    app.innerHTML = `<div class="row"><h2>&gt; ${esc(p.titulo)}</h2>${etiqueta(p) ? `<span class="dim f">[${esc(etiqueta(p))}]</span>` : ""}</div><div class="box body">${parrafos(texto)}</div><a href="#posts">&lt;-- volver</a>`;
+  } catch (e) {
+    if (actual() === h) app.innerHTML = ERR_POSTS;
+  }
+}
+
+// Decide que vista mostrar segun la direccion
+async function render() {
+  const h = actual();
+  window.scrollTo(0, 0);
+  actualizarVentanas();
+  if (h === "acerca") vistaAcerca();
+  else if (h === "posts") await vistaLista(h);
+  else if (h.startsWith("p-")) await vistaPost(h);
+  else vistaInicio(h);
+}
+
+
+/* ================================================================
+   JS 6. VENTANAS VIRUS  (se dibujan desde la lista VENTANAS de JS 1)
+   - Solo salen MAX_VENTANAS (2) a la vez, elegidas al azar en cada pestana.
+   - Se cierran con la x o con cualquier boton (vuelven al recargar).
+   - Tocar el cuerpo de una ventana la hace temblar y la trae al frente.
+   ================================================================ */
+const ESQUINAS = ["arriba-izquierda", "arriba-derecha", "abajo-izquierda", "abajo-derecha"];
+const ventanasEl = [];    // una entrada por ventana: { el, en, esq, cerrada }
+let ultimaPestana = null; // para saber cuando cambiamos de pestana
+let silencio = false;      // true en cuanto cierras una ventana: ya no sale ninguna mas hasta recargar
+let zTop = 5;             // capa mas alta (la ventana tocada pasa al frente)
+
+function crearVentanas() {
+  const cuenta = {};   // cuantas ventanas fijas hay ya en cada esquina
+  VENTANAS.forEach(v => {
+    const d = document.createElement("div");
+    d.className = "virus";
+    const botones = (v.botones || []).map(b => `<button type="button">${esc(b)}</button>`).join("");
+    d.innerHTML =
+      `<div class="v-bar"><span>${esc(v.titulo || "")}</span><button type="button" class="v-x" aria-label="cerrar">x</button></div>` +
+      `<div class="v-body">${v.error ? `<b>${esc(v.error)}</b><br>` : ""}${(v.texto || []).map(t => esc(t)).join("<br>")}` +
+      `${v.barra ? '<div class="v-prog"><i></i></div>' : ""}${botones ? `<div class="v-btns">${botones}</div>` : ""}</div>`;
+    const item = { el: d, en: v.en, esq: ESQUINAS.includes(v.esquina) ? v.esquina : "", cerrada: false, activa: false };
+    // ventana con esquina fija (opcional): se apila con un pequeno desfase
+    if (item.esq) {
+      const [vert, horiz] = item.esq.split("-");
+      const n = cuenta[item.esq] || 0;
+      cuenta[item.esq] = n + 1;
+      d.style[vert === "arriba" ? "top" : "bottom"] = (14 + n * 26) + "px";
+      d.style[horiz === "izquierda" ? "left" : "right"] = (14 + n * 16) + "px";
+    }
+    d.addEventListener("pointerdown", () => { d.style.zIndex = ++zTop; });
+    d.addEventListener("click", e => {
+      if (e.target.closest("button")) { item.cerrada = true; silencio = true; d.style.display = "none"; }   // x o boton: cerrar
+      else { d.classList.remove("tiembla"); void d.offsetWidth; d.classList.add("tiembla"); } // cuerpo: temblar
+    });
+    document.body.appendChild(d);
+    ventanasEl.push(item);
+  });
+  actualizarVentanas();
+}
+
+// Pone una ventana en un sitio al azar, siempre dentro de la pantalla
+function ponerAlAzar(d) {
+  const margen = 8;
+  const x = Math.max(0, window.innerWidth - d.offsetWidth - 2 * margen);
+  const y = Math.max(0, window.innerHeight - d.offsetHeight - 2 * margen);
+  d.style.left = (margen + Math.random() * x) + "px";
+  d.style.top = (margen + Math.random() * y) + "px";
+}
+
+// Pestana en la que estamos: "inicio", "posts" o "acerca"
+function pestanaActual() {
+  const h = actual();
+  return h === "acerca" ? "acerca" : (h === "posts" || h.startsWith("p-")) ? "posts" : "inicio";
+}
+
+// Al cambiar de pestana elige MAX_VENTANAS ventanas al azar entre las que
+// corresponden a esa pestana (campo "en") y las pone en un sitio al azar.
+// En cuanto cierras una, ya no sale ninguna mas hasta recargar la pagina.
+// Si no cambias de pestana (ej. de la lista a un post), se quedan como estan.
+function actualizarVentanas() {
+  const p = pestanaActual();
+  const cambio = p !== ultimaPestana;
+  ultimaPestana = p;
+  actualizarConejos(p);
+  if (cambio) {
+    const candidatas = silencio ? [] : ventanasEl.filter(it => !it.en || it.en.includes(p));
+    for (let k = candidatas.length - 1; k > 0; k--) {          // mezclar (Fisher-Yates)
+      const r = Math.floor(Math.random() * (k + 1));
+      [candidatas[k], candidatas[r]] = [candidatas[r], candidatas[k]];
+    }
+    const elegidas = new Set(candidatas.slice(0, MAX_VENTANAS));
+    ventanasEl.forEach(it => { it.activa = elegidas.has(it); });
+  }
+  ventanasEl.forEach(it => {
+    const sale = it.activa && !it.cerrada;
+    it.el.style.display = sale ? "" : "none";
+    if (sale && cambio && !it.esq) ponerAlAzar(it.el);
+  });
+}
+
+// Si cambia el tamano de la pantalla, las ventanas no se quedan fuera
+function ajustarVentanas() {
+  ventanasEl.forEach(it => {
+    if (it.esq || it.el.style.display === "none") return;
+    const x = Math.max(0, window.innerWidth - it.el.offsetWidth - 8);
+    const y = Math.max(0, window.innerHeight - it.el.offsetHeight - 8);
+    it.el.style.left = Math.min(parseFloat(it.el.style.left) || 0, x) + "px";
+    it.el.style.top = Math.min(parseFloat(it.el.style.top) || 0, y) + "px";
+  });
+}
+
+
+/* ================================================================
+   JS 6b. CONEJO REBOTANDO  (solo en la pestana acerca)
+   - Sale uno al entrar a acerca por primera vez.
+   - Click en la imagen: se duplica (infinito). La x cierra esa ventana.
+   - Al salir de acerca se ocultan y se pausan; al volver siguen ahi.
+   ================================================================ */
+const conejos = [];        // { el, x, y, vx, vy }
+let conejoInicial = false; // ya salio el primero?
+let conejoRaf = 0;         // id de la animacion (0 = parada)
+let conejoT = 0;           // tiempo del ultimo cuadro
+
+function crearConejo(x, y) {
+  const d = document.createElement("div");
+  d.className = "conejo";
+  d.style.width = `min(${CONEJO_ANCHO}px, 45vw)`;
+  d.innerHTML = `<div class="v-bar"><span>BUNNV1</span><button type="button" class="v-x" aria-label="cerrar">x</button></div><img src="${CONEJO_IMG}" alt="" draggable="false">`;
+  document.body.appendChild(d);
+  if (x === undefined) x = Math.random() * Math.max(0, window.innerWidth - d.offsetWidth);
+  if (y === undefined) y = Math.random() * Math.max(0, window.innerHeight - d.offsetHeight);
+  // direccion al azar, evitando que vaya casi recto en un solo eje
+  const dir = () => (Math.random() < 0.5 ? -1 : 1) * CONEJO_VEL * (0.5 + Math.random() * 0.5);
+  const c = { el: d, x, y, vx: dir(), vy: dir() };
+  d.style.transform = `translate(${x}px,${y}px)`;
+  d.style.zIndex = ++zTop;
+  d.addEventListener("pointerdown", () => { d.style.zIndex = ++zTop; });
+  d.addEventListener("click", e => {
+    if (e.target.closest(".v-x")) {                       // x: cerrar
+      d.remove();
+      conejos.splice(conejos.indexOf(c), 1);
+    } else if (e.target.tagName === "IMG") {              // click en la imagen: duplicar
+      crearConejo(c.x, c.y);
+    }
+  });
+  conejos.push(c);
+  iniciarConejos();
+}
+
+function pasoConejos(t) {
+  const dt = Math.min(0.05, (t - conejoT) / 1000);
+  conejoT = t;
+  conejos.forEach(c => {
+    const maxX = Math.max(0, window.innerWidth - c.el.offsetWidth);
+    const maxY = Math.max(0, window.innerHeight - c.el.offsetHeight);
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
+    if (c.x < 0) { c.x = 0; c.vx = Math.abs(c.vx); } else if (c.x > maxX) { c.x = maxX; c.vx = -Math.abs(c.vx); }
+    if (c.y < 0) { c.y = 0; c.vy = Math.abs(c.vy); } else if (c.y > maxY) { c.y = maxY; c.vy = -Math.abs(c.vy); }
+    c.el.style.transform = `translate(${c.x}px,${c.y}px)`;
+  });
+  conejoRaf = conejos.length ? requestAnimationFrame(pasoConejos) : 0;
+}
+
+function iniciarConejos() {
+  if (conejoRaf || !conejos.length) return;
+  conejoT = performance.now();
+  conejoRaf = requestAnimationFrame(pasoConejos);
+}
+
+// Se llama al cambiar de pestana (desde actualizarVentanas)
+function actualizarConejos(p) {
+  if (p === "acerca") {
+    if (!conejoInicial) { conejoInicial = true; crearConejo(); }
+    conejos.forEach(c => { c.el.style.display = ""; });
+    iniciarConejos();
+  } else {
+    conejos.forEach(c => { c.el.style.display = "none"; });
+    if (conejoRaf) { cancelAnimationFrame(conejoRaf); conejoRaf = 0; }
+  }
+}
+
+
+/* ================================================================
+   JS 7. ARRANQUE
+   ================================================================ */
+// Carga los mensajes y dibuja la pagina
+fetch(ARCHIVO_MSG + "?v=" + Date.now(), { cache: "no-store" })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(t => { POSTS = parse(t).reverse(); render(); })
+  .catch(() => { app.innerHTML = ERR_ENTRADAS; });
+
+// Cambiar de pestana
+addEventListener("hashchange", render);
+
+// Ventanas virus (ver JS 6)
+crearVentanas();
+addEventListener("resize", ajustarVentanas);
+
+// Parpadeo del cartel "Nuev0"
+setInterval(() => document.querySelectorAll(".nuevo").forEach(e => e.classList.toggle("b")), 400);
+
+// Efectos animados de texto: "escribiendo" (>>texto>>) y "hackeado" ($texto$)
+const FX_SET = "01#@%&$?/|";
+let fxTick = 0;
+setInterval(() => {
+  fxTick++;
+  document.querySelectorAll(".fx-type").forEach(el => {
+    const ch = [...el.dataset.t], n = ch.length, k = Math.min(fxTick % (n + 14), n);
+    el.innerHTML = esc(ch.slice(0, k).join("")) + '<span style="opacity:0">' + esc(ch.slice(k).join("")) + "</span>";
+  });
+  document.querySelectorAll(".fx-hack").forEach(el => {
+    const ch = [...el.dataset.t], n = ch.length, k = Math.min(n, Math.floor((fxTick % (n * 2 + 24)) / 2));
+    el.textContent = ch.map((c, i) => i < k || c === " " ? c : FX_SET[Math.floor(Math.random() * FX_SET.length)]).join("");
+  });
+}, 80);
+
+// Spoiler (?texto?): un toque lo muestra u oculta
+document.addEventListener("click", e => { const s = e.target.closest(".fx-spoil"); if (s) s.classList.toggle("open"); });
+</script>
+</body>
+</html>
