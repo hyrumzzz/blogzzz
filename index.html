@@ -510,7 +510,7 @@ function vistaAcerca() {
 }
 
 function vistaInicio(h) {
-  app.innerHTML = "<div id='nuevo'></div><h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(x.fecha)}]</span> <span class="t">${esc(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
+  app.innerHTML = "<div id='nuevo'></div><h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(x.fecha)}]</span> <span class="t">${fx(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
   mostrarNuevo(h);
 }
 
