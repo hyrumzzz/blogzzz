@@ -42,6 +42,7 @@
     - cambiar el aspecto de las ventanas .. CSS 9
     - cambiar el aspecto de los efectos ... CSS 11
     - cambiar los simbolos de los efectos . JS 2b (FX_MAP y FX_RE)
+    - cambiar como se ven las fechas ...... JS 2 (funcion bonita)
     - agregar un mensaje corto ............ editar entradas.txt
     - agregar un post ..................... subir un .txt a posts/
         Recomendado: "2026-10-29 Titulo del post.txt"
@@ -49,6 +50,9 @@
         (el numero mayor sale primero; sin numero = 0)
         Sin fecha en el nombre tambien funciona (usa el primer commit,
         pero si lo renombras despues la fecha se reinicia).
+        OJO: en los nombres de archivo (y en entradas.txt) la fecha se
+        escribe siempre AAAA-MM-DD. En la pagina se muestra como D-M-AAAA
+        (ej: 1-11-2026); eso lo hace la funcion bonita().
 
   EFECTOS DE TEXTO (en posts, mensajes y acerca; el simbolo va pegado al texto):
     *rojo*  #invertido#  _subrayado_  ~tachado~  ^grande^  @brillo@  %glitch%
@@ -370,6 +374,13 @@ const actual = () => {
   catch (e) { return "inicio"; }
 };
 
+// Fecha como se ve en la pagina: "2026-11-01" -> "1-11-2026" (dia-mes-ano, sin ceros a la izquierda).
+// Los nombres de archivo y entradas.txt siguen usando AAAA-MM-DD; solo cambia lo que se muestra.
+const bonita = f => {
+  const m = String(f || "").match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  return m ? `${+m[3]}-${+m[2]}-${m[1]}` : f;
+};
+
 // "2026-10-29T16:29:12Z" -> "hace 3 horas" (o la fecha si pasaron 7+ dias)
 function hace(iso) {
   const t = new Date(iso);
@@ -380,11 +391,11 @@ function hace(iso) {
   if (h < 24) return `hace ${h} ${h === 1 ? "hora" : "horas"}`;
   const d = Math.floor(h / 24);
   if (d < 7) return `hace ${d} ${d === 1 ? "día" : "días"}`;
-  return t.toLocaleDateString("sv-SE");
+  return bonita(t.toLocaleDateString("sv-SE"));
 }
 
 // Etiqueta de fecha que se muestra junto a cada post
-const etiqueta = x => x.iso ? hace(x.iso) : x.fecha;
+const etiqueta = x => x.iso ? hace(x.iso) : bonita(x.fecha);
 
 
 /* ================================================================
@@ -510,7 +521,7 @@ function vistaAcerca() {
 }
 
 function vistaInicio(h) {
-  app.innerHTML = "<div id='nuevo'></div><h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(x.fecha)}]</span> <span class="t">${fx(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
+  app.innerHTML = "<div id='nuevo'></div><h2>&gt; MSG</h2>" + (POSTS.map(x => `<div class="post-item"><span class="dim">[${esc(bonita(x.fecha))}]</span> <span class="t">${fx(x.titulo)}</span><div class="body">${parrafos(x.texto)}</div></div>`).join("") || "<p class='dim'>No hay mensajes todavía.</p>");
   mostrarNuevo(h);
 }
 
