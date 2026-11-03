@@ -2,7 +2,7 @@
    Se carga con una linea al final de index.html. Las reseñas son .txt dentro de la carpeta resenas/ */
 (function () {
   const TAB = "resenas", CARPETA_R = "resenas", TITULO = "РЕЦЕНЗИИ";
-  const IMG_RE = /^@@(https?:\/\/[^|\s@]+|[\w\-.]+\.(?:jpe?g|png|webp|gif))(?:\|([^@\n]*))?@@$/i;
+  const IMG_RE = /^@@(https?:\/\/[^|\s@]+|[\w\-./]+\.(?:jpe?g|png|webp|gif))(?:\|([^@\n]*))?@@$/i;
   const src = u => u.replace(/^http:\/\//i, "https://");
 
   /* ---------- estilos ---------- */
@@ -54,7 +54,7 @@
         const l = t.replace(/\r/g, "").trim().split("\n");
         let r = null, img = "";
         if (l.length && /^\d(?:[.,][05])?$/.test(l[0].trim())) r = parseFloat(l.shift().replace(",", "."));
-        if (l.length && /^(?:https?:\/\/\S+|[\w\-.]+\.(?:jpe?g|png|webp|gif))$/i.test(l[0].trim())) img = l.shift().trim();
+        if (l.length && /^(?:https?:\/\/\S+|[\w\-./]+\.(?:jpe?g|png|webp|gif))$/i.test(l[0].trim())) img = l.shift().trim();
         return { r, img, texto: l.join("\n").trim().split(/\n\s*\n/).filter(Boolean) };
       })
       .catch(() => ({ falla: true, texto: [] })));
