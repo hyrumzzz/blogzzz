@@ -1,4 +1,4 @@
-/* resenas.js - pestana de reseñas (РЕЦЕНЗИИ) e imagenes en los textos.
+/* resenas.js - pestana de reseñas e imagenes en los textos.
    Se carga con una linea al final de index.html. Las reseñas son .txt dentro de la carpeta resenas/ */
 (function () {
   const TAB = "resenas", CARPETA_R = "resenas", TITULO = "reseñas";
@@ -12,12 +12,13 @@
 .img{float:right;display:block;width:34%;max-width:170px;margin:4px 0 8px 14px}
 .img img{display:block;width:100%;height:auto;border:1px solid var(--fg)}
 .img .cap{display:block;color:var(--dim);font-size:13px;line-height:1.3;margin-top:4px}
-.rrow{display:flex;gap:12px;border:1px solid var(--fg);padding:8px;margin:0 0 10px}
-.rrow:hover,.rrow:focus{background:none;color:var(--fg);border-color:var(--red)}
-.rrow img{width:72px;height:auto;aspect-ratio:2/3;flex:none;align-self:flex-start;object-fit:cover;border:1px solid var(--fg)}
-.rrow .info{min-width:0;flex:1}
-.rrow .t{font-weight:bold}
-.rrow .ex{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;color:var(--dim);font-size:13px;overflow:hidden;margin-top:2px}
+.cart{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.cc{display:block;color:var(--fg)}
+.cc:hover,.cc:focus{background:none;color:var(--fg)}
+.cc img,.cc .ph{display:block;width:100%;height:auto;aspect-ratio:2/3;object-fit:cover;border:1px solid var(--fg)}
+.cc:hover img,.cc:hover .ph,.cc:focus img,.cc:focus .ph{border-color:var(--red)}
+.cc .t{display:block;font-weight:bold;font-size:12px;line-height:1.3;margin-top:6px}
+.cc .stars{display:block;font-size:12px;letter-spacing:1px;margin-top:2px}
 .stars{color:var(--red);letter-spacing:2px;white-space:nowrap}
 .stars i{font-style:normal;color:var(--dim)}`;
   document.head.appendChild(st);
@@ -67,11 +68,12 @@
       const l = await cargar();
       const d = await Promise.all(l.map(datos));
       if (actual() !== h) return;
-      app.innerHTML = `<h2>&gt; ${TITULO}</h2>` + (l.map((x, i) => {
+      const celdas = l.map((x, i) => {
         const t = d[i];
-        const ex = sinfx((t.texto || []).find(p => !IMG_RE.test(p.trim())) || "").replace(/\s+/g, " ");
-        return `<a class="rrow" href="#${x.id}">${t.img ? `<img src="${esc(src(t.img))}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="info"><span class="t">${esc(x.titulo)}</span><br>${t.r != null ? `<span class="stars">${est(t.r)}</span>` : ""}<span class="ex">${esc(ex)}</span></span></a>`;
-      }).join("") || "<p class='dim'>No hay reseñas todavía.</p>");
+        const portada = t.img ? `<img src="${esc(src(t.img))}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;ph&quot;></span>'">` : `<span class="ph"></span>`;
+        return `<a class="cc" href="#${x.id}">${portada}<span class="t">${esc(x.titulo)}</span>${t.r != null ? `<span class="stars">${est(t.r)}</span>` : ""}</a>`;
+      }).join("");
+      app.innerHTML = `<h2>&gt; ${TITULO}</h2>` + (celdas ? `<div class="cart">${celdas}</div>` : "<p class='dim'>No hay reseñas todavía.</p>");
     } catch (e) {
       if (actual() === h) app.innerHTML = "<div class='box'>No se pudieron cargar las reseñas.</div>";
     }
