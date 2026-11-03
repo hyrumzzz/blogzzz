@@ -2,7 +2,8 @@
    Se carga con una linea al final de index.html. Las reseñas son .txt dentro de la carpeta resenas/ */
 (function () {
   const TAB = "resenas", CARPETA_R = "resenas", TITULO = "РЕЦЕНЗИИ";
-  const IMG_RE = /^@@(https?:\/\/[^|\s@]+)(?:\|([^@\n]*))?@@$/;
+  const IMG_RE = /^@@(https?:\/\/[^|\s@]+|[\w\-.]+\.(?:jpe?g|png|webp|gif))(?:\|([^@\n]*))?@@$/i;
+  const src = u => u.replace(/^http:\/\//i, "https://");
 
   /* ---------- estilos ---------- */
   const st = document.createElement("style");
@@ -22,7 +23,7 @@
   document.head.appendChild(st);
 
   /* ---------- imagen dentro de un texto: @@https://link|pie@@ (en su propio parrafo) ---------- */
-  const figura = (u, pie) => `<span class="img"><img src="${esc(u)}" loading="lazy" alt="" onerror="this.parentNode.remove()">${pie ? `<span class="cap">${esc(pie)}</span>` : ""}</span>`;
+  const figura = (u, pie) => `<span class="img"><img src="${esc(src(u))}" loading="lazy" alt="" onerror="this.parentNode.remove()">${pie ? `<span class="cap">${esc(pie)}</span>` : ""}</span>`;
   const fx0 = window.fx;
   window.fx = s => { const m = String(s).trim().match(IMG_RE); return m ? figura(m[1], m[2]) : fx0(s); };
 
@@ -45,7 +46,7 @@
   let LISTA = null;
   const cargar = () => LISTA || (LISTA = leerLista().catch(e => { LISTA = null; throw e; }));
 
-  /* Formato de cada .txt:  linea 1 = estrellas (ej. 4.5), linea 2 = link de la imagen (opcional), el resto = texto */
+  /* Formato de cada .txt:  linea 1 = estrellas (ej. 4.5), linea 2 = link de la imagen o nombre de un archivo del repo (opcional), el resto = texto */
   function datos(x) {
     return x.d || (x.d = fetch(`${CARPETA_R}/${encodeURIComponent(x.name)}?v=${Date.now()}`, { cache: "no-store" })
       .then(r => { if (!r.ok) throw 0; return r.text(); })
@@ -53,7 +54,7 @@
         const l = t.replace(/\r/g, "").trim().split("\n");
         let r = null, img = "";
         if (l.length && /^\d(?:[.,][05])?$/.test(l[0].trim())) r = parseFloat(l.shift().replace(",", "."));
-        if (l.length && /^https?:\/\/\S+$/i.test(l[0].trim())) img = l.shift().trim();
+        if (l.length && /^(?:https?:\/\/\S+|[\w\-.]+\.(?:jpe?g|png|webp|gif))$/i.test(l[0].trim())) img = l.shift().trim();
         return { r, img, texto: l.join("\n").trim().split(/\n\s*\n/).filter(Boolean) };
       })
       .catch(() => ({ falla: true, texto: [] })));
@@ -69,7 +70,7 @@
       app.innerHTML = `<h2>&gt; ${TITULO}</h2>` + (l.map((x, i) => {
         const t = d[i];
         const ex = sinfx((t.texto || []).find(p => !IMG_RE.test(p.trim())) || "").replace(/\s+/g, " ");
-        return `<a class="rrow" href="#${x.id}">${t.img ? `<img src="${esc(t.img)}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="info"><span class="t">${esc(x.titulo)}</span><br>${t.r != null ? `<span class="stars">${est(t.r)}</span>` : ""}<span class="ex">${esc(ex)}</span></span></a>`;
+        return `<a class="rrow" href="#${x.id}">${t.img ? `<img src="${esc(src(t.img))}" alt="" loading="lazy" onerror="this.remove()">` : ""}<span class="info"><span class="t">${esc(x.titulo)}</span><br>${t.r != null ? `<span class="stars">${est(t.r)}</span>` : ""}<span class="ex">${esc(ex)}</span></span></a>`;
       }).join("") || "<p class='dim'>No hay reseñas todavía.</p>");
     } catch (e) {
       if (actual() === h) app.innerHTML = "<div class='box'>No se pudieron cargar las reseñas.</div>";
