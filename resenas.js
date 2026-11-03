@@ -1,7 +1,7 @@
 /* resenas.js - pestana de reseñas (РЕЦЕНЗИИ) e imagenes en los textos.
    Se carga con una linea al final de index.html. Las reseñas son .txt dentro de la carpeta resenas/ */
 (function () {
-  const TAB = "resenas", CARPETA_R = "resenas", TITULO = "reseñas";
+  const TAB = "resenas", CARPETA_R = "resenas", TITULO = "РЕЦЕНЗИИ";
   const IMG_RE = /^@@(https?:\/\/[^|\s@]+|[\w\-./]+\.(?:jpe?g|png|webp|gif))(?:\|([^@\n]*))?@@$/i;
   const src = u => u.replace(/^http:\/\//i, "https://");
 
@@ -14,10 +14,10 @@
 .img .cap{display:block;color:var(--dim);font-size:13px;line-height:1.3;margin-top:4px}
 .rrow{display:flex;gap:12px;border:1px solid var(--fg);padding:8px;margin:0 0 10px}
 .rrow:hover,.rrow:focus{background:none;color:var(--fg);border-color:var(--red)}
-.rrow img{width:64px;height:64px;flex:none;object-fit:cover;border:1px solid var(--fg)}
+.rrow img{width:72px;height:auto;aspect-ratio:2/3;flex:none;align-self:flex-start;object-fit:cover;border:1px solid var(--fg)}
 .rrow .info{min-width:0;flex:1}
 .rrow .t{font-weight:bold}
-.rrow .ex{display:block;color:var(--dim);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .ex{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;color:var(--dim);font-size:13px;overflow:hidden;margin-top:2px}
 .stars{color:var(--red);letter-spacing:2px;white-space:nowrap}
 .stars i{font-style:normal;color:var(--dim)}`;
   document.head.appendChild(st);
