@@ -1,7 +1,7 @@
 /* resenas.js - pestana de reseñas (РЕЦЕНЗИИ) e imagenes en los textos.
    Se carga con una linea al final de index.html. Las reseñas son .txt dentro de la carpeta resenas/ */
 (function () {
-  const TAB = "resenas", CARPETA_R = "resenas", TITULO = "РЕЦЕНЗИИ";
+  const TAB = "resenas", CARPETA_R = "resenas", TITULO = "reseñas";
   const IMG_RE = /^@@(https?:\/\/[^|\s@]+|[\w\-./]+\.(?:jpe?g|png|webp|gif))(?:\|([^@\n]*))?@@$/i;
   const src = u => u.replace(/^http:\/\//i, "https://");
 
