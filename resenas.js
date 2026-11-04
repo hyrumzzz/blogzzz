@@ -1,15 +1,20 @@
 /* resenas.js - pestana de reseñas e imagenes en los textos.
-   Se carga con una linea al final de index.html. Las reseñas son .txt dentro de la carpeta resenas/ */
+   Se carga con una linea al final de index.html. Las reseñas son .txt dentro de la carpeta resenas/
+   Imagenes en un texto (en su propio parrafo, el pie es opcional):
+     @@link|pie@@   imagen pequeña a la izquierda
+     @@>link|pie@@  imagen pequeña a la derecha
+   Se pueden poner varias, en cualquier parte. Si el link falla, la imagen no se muestra. */
 (function () {
   const TAB = "resenas", CARPETA_R = "resenas", TITULO = "reseñas";
-  const IMG_RE = /^@@(https?:\/\/[^|\s@]+|[\w\-./]+\.(?:jpe?g|png|webp|gif))(?:\|([^@\n]*))?@@$/i;
+  const IMG_RE = /^@@([<>])?(https?:\/\/[^|\s@]+|[\w\-./]+\.(?:jpe?g|png|webp|gif))(?:\|([^@\n]*))?@@$/i;
   const src = u => u.replace(/^http:\/\//i, "https://");
 
   /* ---------- estilos ---------- */
   const st = document.createElement("style");
   st.textContent = `
 .box{display:flow-root}
-.img{float:right;display:block;width:34%;max-width:170px;margin:4px 0 8px 14px}
+.img{float:left;display:block;width:34%;max-width:170px;margin:4px 14px 8px 0}
+.img.der{float:right;margin:4px 0 8px 14px}
 .img img{display:block;width:100%;height:auto;border:1px solid var(--fg)}
 .img .cap{display:block;color:var(--dim);font-size:13px;line-height:1.3;margin-top:4px}
 .cart{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -23,10 +28,10 @@
 .stars i{font-style:normal;color:var(--dim)}`;
   document.head.appendChild(st);
 
-  /* ---------- imagen dentro de un texto: @@https://link|pie@@ (en su propio parrafo) ---------- */
-  const figura = (u, pie) => `<span class="img"><img src="${esc(src(u))}" loading="lazy" alt="" onerror="this.parentNode.remove()">${pie ? `<span class="cap">${esc(pie)}</span>` : ""}</span>`;
+  /* ---------- imagen dentro de un texto: @@link|pie@@ (izquierda) o @@>link|pie@@ (derecha), en su propio parrafo ---------- */
+  const figura = (u, pie, der) => `<span class="img${der ? " der" : ""}"><img src="${esc(src(u))}" loading="lazy" alt="" onerror="this.parentNode.remove()">${pie ? `<span class="cap">${esc(pie)}</span>` : ""}</span>`;
   const fx0 = window.fx;
-  window.fx = s => { const m = String(s).trim().match(IMG_RE); return m ? figura(m[1], m[2]) : fx0(s); };
+  window.fx = s => { const m = String(s).trim().match(IMG_RE); return m ? figura(m[2], m[3], m[1] === ">") : fx0(s); };
 
   /* ---------- utilidades ---------- */
   const est = n => { n = Math.max(0, Math.min(5, n)); const f = Math.floor(n), h = n % 1 >= .5; return "★".repeat(f) + (h ? "½" : "") + "<i>" + "☆".repeat(5 - f - (h ? 1 : 0)) + "</i>"; };
@@ -87,7 +92,7 @@
       const t = await datos(x);
       if (actual() !== h) return;
       if (t.falla) { app.innerHTML = `<div class='box'>Esta reseña aún se está publicando. Intenta de nuevo en un minuto.</div><a href="#${TAB}">&lt;-- volver</a>`; return; }
-      app.innerHTML = `<div class="row"><h2>&gt; ${esc(x.titulo)}</h2>${t.r != null ? `<span class="f stars">${est(t.r)}</span>` : ""}</div><div class="box body">${t.img ? figura(t.img, x.titulo) : ""}${parrafos(t.texto)}</div><a href="#${TAB}">&lt;-- volver</a>`;
+      app.innerHTML = `<div class="row"><h2>&gt; ${esc(x.titulo)}</h2>${t.r != null ? `<span class="f stars">${est(t.r)}</span>` : ""}</div><div class="box body">${t.img ? figura(t.img, x.titulo, true) : ""}${parrafos(t.texto)}</div><a href="#${TAB}">&lt;-- volver</a>`;
     } catch (e) {
       if (actual() === h) app.innerHTML = "<div class='box'>No se pudo cargar la reseña.</div>";
     }
