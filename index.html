@@ -452,7 +452,7 @@ function fx(src) {
     const e = esc(t);
     if (k === "box") { const b = "─".repeat([...t].length + 2); out += `<span class="fx-box">┌${b}┐\n│ ${e} │\n└${b}┘</span>`; }
     else if (k === "tag") out += `<span class="fx-tag">[ ${e} ]</span>`;
-    else if (k === "susurro") out += `<span class="fx-susurro">(${e})</span>`;
+    else if (k === "susurro") out += `<span class="fx-susurro">${e}</span>`;
     else if (k === "type" || k === "hack") out += `<span class="fx-${k}" data-t="${e}">${e}</span>`;
     else out += `<span class="fx-${k}">${e}</span>`;
     last = m.index + m[0].length;
